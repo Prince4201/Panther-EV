@@ -251,7 +251,9 @@ export async function listInquiries(req, res) {
 
   const items = itemsRes.rows.map((r) => {
     const inq = mapInquiry(r);
-    inq.assignedTo = r.assigned_to ? { id: r.assigned_to, name: r.assigned_to_name, email: r.assigned_to_email } : null;
+    inq.assignedTo = r.assigned_to
+      ? { id: r.assigned_to, _id: r.assigned_to, name: r.assigned_to_name, email: r.assigned_to_email }
+      : null;
     return inq;
   });
 
@@ -279,7 +281,7 @@ export async function getInquiry(req, res) {
   if (inquiry.assignedTo) {
     const admRes = await query('SELECT id, name, email FROM admins WHERE id = $1', [inquiry.assignedTo]);
     if (admRes.rows.length > 0) {
-      inquiry.assignedTo = { id: admRes.rows[0].id, name: admRes.rows[0].name, email: admRes.rows[0].email };
+      inquiry.assignedTo = { id: admRes.rows[0].id, _id: admRes.rows[0].id, name: admRes.rows[0].name, email: admRes.rows[0].email };
     }
   }
 

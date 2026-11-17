@@ -23,6 +23,7 @@ export const inquirySchema = z.object({
   subject: z.string().trim().max(120).optional().default(''),
   message: z.string().trim().max(1500).optional().default(''),
   vehicles: z.array(z.object({ slug: z.string().max(80), name: z.string().max(120) })).max(10).optional().default([]),
-  country: z.string().trim().length(2).optional().default('IN'),
-  source: z.enum(['cart', 'contact']).default('contact'),
-}).strict();
+  vehicleInterest: z.string().trim().max(80).optional().default(''),
+  country: z.string().trim().max(10).optional().default('IN'),
+  source: z.enum(['cart', 'contact', 'quick-enquiry']).default('contact'),
+});
