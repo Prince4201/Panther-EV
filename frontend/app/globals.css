@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-white font-sans text-ink antialiased; overflow-x: hidden; }
+  :focus-visible { outline: 3px solid #F5A300; outline-offset: 3px; }
+  ::selection { background: #E4202B; color: #fff; }
+}
+
+@keyframes slowzoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+.slowzoom { animation: slowzoom 18s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@keyframes heroProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Finance partner logo cards (Finance page, "Latest from Panther", footer).
+   Only transform + shadow change on hover, so neighbouring cards never move and the layout never jumps. */
+.partner-card { position: relative; transition: transform 280ms ease, box-shadow 280ms ease, border-color 280ms ease; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) and (pointer: fine) {
+  .partner-card:hover { transform: scale(1.04); box-shadow: 0 16px 34px -16px rgba(20, 21, 26, 0.35); z-index: 1; }
+}
+.partner-card:focus-visible { transform: scale(1.04); box-shadow: 0 16px 34px -16px rgba(20, 21, 26, 0.35); z-index: 1; }
+/* Touch screens have no hover: a light press-in confirms the tap instead of a "stuck" enlarged card. */
+.partner-card:active { transform: scale(0.98); }

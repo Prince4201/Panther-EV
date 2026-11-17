@@ -1,0 +1,7 @@
+import type { MetadataRoute } from 'next';
+import { site } from '@/data/site';
+
+const base = process.env.NEXT_PUBLIC_SITE_URL ?? site.url;
+export default function robots(): MetadataRoute.Robots {
+  return { rules: [{ userAgent: '*', allow: '/', disallow: ['/admin', '/account', '/login', '/register'] }], sitemap: `${base}/sitemap.xml` };
+}
