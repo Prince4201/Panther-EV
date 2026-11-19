@@ -7,7 +7,7 @@ import { useAdmin } from '@/components/admin/AdminContext';
 import { ActiveBadge, Empty, ErrorNote, Forbidden, Loading, PageTitle, Pager, TableWrap, Td, Th, input } from '@/components/admin/ui';
 import { fmtDate } from '@/lib/enquiry';
 
-interface Row { _id: string; name: string; email: string; phone: string; address?: { city?: string; state?: string }; active: boolean; createdAt: string; lastActiveAt?: string; enquiryCount: number }
+interface Row { _id?: string; id?: string; name: string; email: string; phone: string; address?: { city?: string; state?: string }; active: boolean; createdAt: string; lastActiveAt?: string; enquiryCount: number }
 
 function List() {
   const { can } = useAdmin();
@@ -38,17 +38,20 @@ function List() {
         <>
           <TableWrap>
             <thead><tr><Th>Name</Th><Th>Phone</Th><Th>Location</Th><Th>Registered</Th><Th>Last active</Th><Th>Enquiries</Th><Th>Status</Th></tr></thead>
-            <tbody>{data.customers.map((c) => (
-              <tr key={c._id} className="hover:bg-fog/60">
-                <Td><Link href={`/admin/customers/${c._id}`} className="font-semibold hover:text-panther-red">{c.name}</Link><p className="break-all text-xs text-steel">{c.email}</p></Td>
-                <Td className="whitespace-nowrap">{c.phone || '–'}</Td>
-                <Td>{[c.address?.city, c.address?.state].filter(Boolean).join(', ') || '–'}</Td>
-                <Td className="whitespace-nowrap">{fmtDate(c.createdAt)}</Td>
-                <Td className="whitespace-nowrap">{fmtDate(c.lastActiveAt)}</Td>
-                <Td>{c.enquiryCount}</Td>
-                <Td><ActiveBadge active={c.active} /></Td>
-              </tr>
-            ))}</tbody>
+            <tbody>{data.customers.map((c) => {
+              const cid = c._id || c.id;
+              return (
+                <tr key={cid} className="hover:bg-fog/60">
+                  <Td><Link href={`/admin/customers/${cid}`} className="font-semibold hover:text-panther-red">{c.name}</Link><p className="break-all text-xs text-steel">{c.email}</p></Td>
+                  <Td className="whitespace-nowrap">{c.phone || '–'}</Td>
+                  <Td>{[c.address?.city, c.address?.state].filter(Boolean).join(', ') || '–'}</Td>
+                  <Td className="whitespace-nowrap">{fmtDate(c.createdAt)}</Td>
+                  <Td className="whitespace-nowrap">{fmtDate(c.lastActiveAt)}</Td>
+                  <Td>{c.enquiryCount}</Td>
+                  <Td><ActiveBadge active={c.active} /></Td>
+                </tr>
+              );
+            })}</tbody>
           </TableWrap>
           <Pager page={page} total={data.total} limit={data.limit} onPage={setPage} />
         </>

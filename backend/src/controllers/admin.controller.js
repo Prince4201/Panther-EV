@@ -126,7 +126,14 @@ export async function dashboard(req, res) {
   });
 
   const recentUsers = recentUsersRes
-    ? recentUsersRes.rows.map((u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.created_at, active: u.active }))
+    ? recentUsersRes.rows.map((u) => ({
+        id: u.id,
+        _id: u.id,
+        name: u.name,
+        email: u.email,
+        createdAt: u.created_at,
+        active: u.active,
+      }))
     : null;
   const recentActivity = recentActRes ? recentActRes.rows.map(mapActivityLog) : null;
   const workload = workloadRes ? workloadRes.rows : null;

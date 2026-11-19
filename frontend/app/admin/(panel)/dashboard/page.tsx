@@ -12,7 +12,7 @@ interface Dash {
   counts: Record<string, number>;
   byStatus?: Record<string, number>;
   recentEnquiries: Enq[];
-  recentUsers?: Array<{ _id: string; name: string; email: string; createdAt: string; active: boolean }>;
+  recentUsers?: Array<{ _id?: string; id?: string; name: string; email: string; createdAt: string; active: boolean }>;
   recentActivity?: Array<{ _id: string; summary: string; createdAt: string; actor?: { name: string } }>;
   workload?: Array<{ _id: string; open: number }>;
 }
@@ -80,7 +80,18 @@ export default function Dashboard() {
         {d.recentUsers && (
           <Card title="Recent customers" action={<Link href="/admin/customers" className="text-sm font-semibold text-panther-red">View all</Link>}>
             {!d.recentUsers.length ? <p className="text-sm text-steel">No customers yet.</p> : (
-              <ul className="divide-y divide-line">{d.recentUsers.map((u) => <li key={u._id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><Link href={`/admin/customers/${u._id}`} className="min-w-0"><span className="block truncate font-semibold hover:text-panther-red">{u.name}</span><span className="block truncate text-xs text-steel">{u.email}</span></Link><span className="shrink-0 text-xs text-steel">{fmtDate(u.createdAt)}</span></li>)}</ul>
+              <ul className="divide-y divide-line">{d.recentUsers.map((u) => {
+                const uid = u._id || u.id;
+                return (
+                  <li key={uid} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                    <Link href={`/admin/customers/${uid}`} className="min-w-0">
+                      <span className="block truncate font-semibold hover:text-panther-red">{u.name}</span>
+                      <span className="block truncate text-xs text-steel">{u.email}</span>
+                    </Link>
+                    <span className="shrink-0 text-xs text-steel">{fmtDate(u.createdAt)}</span>
+                  </li>
+                );
+              })}</ul>
             )}
           </Card>
         )}
