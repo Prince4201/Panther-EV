@@ -5,7 +5,7 @@ import type { Category, Product, Spec } from '@/types/product';
 const unpublished = (): Spec[] =>
   ['Range', 'Battery', 'Motor', 'Payload', 'Charging', 'Warranty'].map((label) => ({ label, value: null }));
 
-const img = (file: string) => `https://pantherev.com/${file}.png`;
+const img = (file: string) => `/vehicles/${file}.png`;
 
 export const products: Product[] = [
   { slug: 'panther-xl-plus', summary: 'Heavy-duty passenger e-rickshaw, the top of the XL line.', name: 'Panther XL Plus', category: 'passenger', tag: 'Heavy Duty', image: img('panther-xl-plus'), specs: unpublished() },
