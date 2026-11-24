@@ -27,7 +27,12 @@ export function VehicleShowcase() {
           <div role="tablist" aria-label="Vehicle category" className="no-scrollbar flex max-w-full gap-6 overflow-x-auto border-b border-line">
             {tabs.map((t) => (
               <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-                className={cn('-mb-px whitespace-nowrap border-b-2 pb-3 text-sm font-semibold uppercase tracking-wider transition-colors', tab === t.id ? 'border-panther-red text-ink' : 'border-transparent text-steel hover:text-ink')}>{t.label}</button>
+                className={cn('relative -mb-px whitespace-nowrap pb-3 text-sm font-semibold uppercase tracking-wider transition-colors', tab === t.id ? 'text-ink' : 'text-steel hover:text-ink')}>
+                {t.label}
+                {tab === t.id && (
+                  <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-panther-red shadow-[0_1px_6px_rgba(228,32,43,0.5)]" />
+                )}
+              </button>
             ))}
           </div>
         </div>
@@ -39,24 +44,24 @@ export function VehicleShowcase() {
           return (
             <li key={p.slug} className="w-[82vw] shrink-0 snap-start sm:w-[46vw] lg:w-[38vw] xl:w-auto">
               <article className="group">
-                <Link href={`/vehicles/${p.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-fog" aria-label={`Explore ${p.name}`}>
-                  {p.tag && <span className="absolute left-4 top-4 z-10 bg-ink px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">{p.tag}</span>}
+                <Link href={`/vehicles/${p.slug}`} className="relative block aspect-[4/3] overflow-hidden rounded-2xl bg-fog/80 border border-transparent transition-all duration-300 group-hover:border-line/70 group-hover:shadow-lg group-hover:-translate-y-1" aria-label={`Explore ${p.name}`}>
+                  {p.tag && <span className="absolute left-4 top-4 z-10 rounded bg-ink px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-sm">{p.tag}</span>}
                   <Image src={p.image} unoptimized={isExternalImage(p.image)} alt={`${p.name}`} fill sizes="(min-width:1280px) 30vw, (min-width:640px) 46vw, 82vw" className="object-contain p-6 transition-transform duration-500 group-hover:scale-[1.06]" />
                 </Link>
                 <div className="mt-5 flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-steel">{label(p.category)}</p>
-                    <h3 className="mt-1 font-display text-4xl leading-none">{p.name}</h3>
+                    <h3 className="mt-1 font-display text-4xl leading-none transition-colors group-hover:text-panther-red">{p.name}</h3>
                   </div>
                   <button onClick={() => toggle(p.slug)} aria-pressed={on} aria-label={`Compare ${p.name}`}
-                    className={cn('flex shrink-0 items-center gap-1.5 border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors', on ? 'border-panther-red bg-panther-red text-white' : 'border-line text-steel hover:border-ink hover:text-ink')}>
+                    className={cn('flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200 active:scale-95', on ? 'border-panther-red bg-panther-red text-white shadow-sm shadow-panther-red/40' : 'border-line text-steel hover:border-ink hover:text-ink hover:bg-fog')}>
                     {on ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}Compare
                   </button>
                 </div>
-                <p className="mt-3 border-t border-line pt-3 text-sm text-steel">Specifications: {SPEC_FALLBACK}</p>
+                <p className="mt-3 border-t border-line/80 pt-3 text-sm text-steel">Specifications: {SPEC_FALLBACK}</p>
                 <div className="mt-4 flex gap-6 text-sm font-semibold uppercase tracking-wider">
-                  <Link href={`/vehicles/${p.slug}`} className="border-b-2 border-ink pb-1 hover:border-panther-red hover:text-panther-red">Explore</Link>
-                  <button onClick={() => cart.has(p.slug) ? cart.setOpen(true) : cart.add({ slug: p.slug, name: p.name, image: p.image })} className="border-b-2 border-transparent pb-1 text-panther-red hover:border-panther-red">{cart.has(p.slug) ? 'In enquiry cart' : 'Add to enquiry'}</button>
+                  <Link href={`/vehicles/${p.slug}`} className="border-b-2 border-ink pb-1 transition-colors hover:border-panther-red hover:text-panther-red">Explore</Link>
+                  <button onClick={() => cart.has(p.slug) ? cart.setOpen(true) : cart.add({ slug: p.slug, name: p.name, image: p.image })} className="border-b-2 border-transparent pb-1 text-panther-red transition-colors hover:border-panther-red">{cart.has(p.slug) ? 'In enquiry cart' : 'Add to enquiry'}</button>
                 </div>
               </article>
             </li>

@@ -84,7 +84,7 @@ export function HeroCopy({ slide }: { slide: HeroSlideData }) {
       {slide.subtitle && <motion.p variants={lineVariants} className="mt-4 text-lg font-medium text-white/95 md:text-xl lg:text-[clamp(1.1rem,1.6vw,1.6rem)]">{slide.subtitle}</motion.p>}
       {slide.button1Text && slide.button1Url && (
         <motion.div variants={lineVariants} className="mt-7 lg:mt-9">
-          <Button href={slide.button1Url} arrow className="px-7 py-4 text-sm">{slide.button1Text}</Button>
+          <Button href={slide.button1Url} arrow className="px-8 py-4 text-sm shadow-lg shadow-panther-red/30 hover:shadow-xl hover:shadow-panther-red/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">{slide.button1Text}</Button>
         </motion.div>
       )}
     </>

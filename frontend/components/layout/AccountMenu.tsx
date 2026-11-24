@@ -2,9 +2,10 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User } from 'lucide-react';
+import { ChevronDown, LogOut, Shield, User } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useDismiss } from '@/lib/useDismiss';
+import { cn } from '@/lib/utils';
 
 export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
   const { isStaff, account, logout } = useAuth();
@@ -12,24 +13,94 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useDismiss(box, open, () => setOpen(false));
-  const item = 'block px-4 py-2.5 text-[15px] hover:bg-fog';
+  const item = 'flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-fog hover:text-panther-red';
 
   return (
     <div ref={box} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label={account ? `Account: ${account.name}` : 'Account'}
-        className={iconOnly ? 'p-2.5 transition-colors hover:text-panther-red' : 'flex items-center gap-2 px-2 py-2 text-[14px] font-medium transition-colors hover:text-panther-red xl:text-[15.5px]'}>
-        <User className={iconOnly ? 'h-6 w-6' : 'h-5 w-5'} aria-hidden />
-        {!iconOnly && <span className="max-w-[150px] truncate">{account ? account.name : 'Sign in'}</span>}
-      </button>
+      {account ? (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Account: ${account.name}`}
+          className={cn(
+            'group flex items-center transition-all duration-200 active:scale-95',
+            iconOnly
+              ? 'h-10 w-10 justify-center rounded-full text-ink/80 hover:bg-fog hover:text-panther-red'
+              : 'gap-2 rounded-full border border-line/80 bg-fog/70 pl-1.5 pr-3 py-1 hover:border-panther-red/40 hover:bg-fog hover:shadow-sm'
+          )}
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-panther-red text-white text-[11px] font-bold uppercase shadow-sm">
+            {account.name.charAt(0)}
+          </span>
+          {!iconOnly && (
+            <>
+              <span className="max-w-[130px] truncate text-[13.5px] font-semibold text-ink group-hover:text-panther-red transition-colors">
+                {account.name.split(' ')[0]}
+              </span>
+              <ChevronDown className={cn('h-3.5 w-3.5 text-steel transition-transform duration-200', open && 'rotate-180')} aria-hidden />
+            </>
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label="Account sign in"
+          className={cn(
+            'group flex items-center transition-all duration-200 active:scale-95',
+            iconOnly
+              ? 'h-10 w-10 justify-center rounded-full text-ink/80 hover:bg-fog hover:text-panther-red'
+              : 'gap-1.5 rounded-full bg-ink px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm hover:bg-panther-red hover:shadow-md hover:shadow-panther-red/25'
+          )}
+        >
+          <User className="h-3.5 w-3.5" aria-hidden />
+          {!iconOnly && <span>Sign in</span>}
+        </button>
+      )}
+
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-[70] mt-2 w-56 border border-line bg-white py-1 shadow-xl" onClick={() => setOpen(false)}>
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-[70] mt-2.5 w-60 rounded-2xl border border-line/80 bg-white/98 p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)] backdrop-blur-xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150"
+          onClick={() => setOpen(false)}
+        >
           {account ? (
             <>
-              <p className="truncate border-b border-line px-4 py-2.5 text-xs text-steel">{account.email}</p>
-              {isStaff
-                ? <><Link role="menuitem" href="/admin/dashboard" className={item}>Admin dashboard</Link><Link role="menuitem" href="/admin/profile" className={item}>My profile</Link></>
-                : <><Link role="menuitem" href="/account" className={item}>My enquiries</Link><Link role="menuitem" href="/account/profile" className={item}>Profile</Link><Link role="menuitem" href="/account/settings" className={item}>Settings</Link></>}
-              <button role="menuitem" onClick={async () => { await logout(); router.push('/'); router.refresh(); }} className={`${item} w-full text-left`}>Sign out</button>
+              <div className="border-b border-line/70 px-3.5 py-3 mb-1">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-panther-red">Signed in as</p>
+                <p className="truncate text-sm font-semibold text-ink">{account.name}</p>
+                <p className="truncate text-xs text-steel">{account.email}</p>
+              </div>
+              {isStaff ? (
+                <>
+                  <Link role="menuitem" href="/admin/dashboard" className={item}>
+                    <Shield className="h-4 w-4 text-panther-red" />
+                    Admin dashboard
+                  </Link>
+                  <Link role="menuitem" href="/admin/profile" className={item}>
+                    <User className="h-4 w-4 text-steel" />
+                    My profile
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link role="menuitem" href="/account" className={item}>My enquiries</Link>
+                  <Link role="menuitem" href="/account/profile" className={item}>Profile</Link>
+                  <Link role="menuitem" href="/account/settings" className={item}>Settings</Link>
+                </>
+              )}
+              <div className="mt-1 border-t border-line/70 pt-1">
+                <button
+                  role="menuitem"
+                  onClick={async () => { await logout(); router.push('/'); router.refresh(); }}
+                  className={cn(item, 'w-full text-left text-panther-red hover:bg-red-50')}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
             </>
           ) : (
             <>

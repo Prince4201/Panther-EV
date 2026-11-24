@@ -23,13 +23,15 @@ export async function FindYourPanther() {
           {panels.map((p) => {
             const m = products.find((x) => x.slug === p.model) ?? builtIn(p.model) ?? products[0];
             return (
-              <Link key={p.title} href={p.href} className="group relative flex min-h-[420px] flex-col justify-between overflow-hidden bg-ink p-8 text-white md:min-h-[560px]">
+              <Link key={p.title} href={p.href} className="group relative flex min-h-[420px] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-charcoal to-ink p-8 text-white md:min-h-[560px] border border-white/5 shadow-xl hover:border-white/15 hover:shadow-2xl transition-all duration-300">
                 <div className="relative z-10 max-w-xs">
                   <h3 className="font-display text-5xl leading-none md:text-6xl">{p.title}</h3>
                   <p className="mt-3 text-white/70">{p.text}</p>
                 </div>
                 <Image src={m.image} unoptimized={isExternalImage(m.image)} alt="" fill sizes="(min-width:768px) 50vw, 100vw" className="object-contain object-bottom p-10 pt-40 transition-transform duration-500 group-hover:scale-105" />
-                <span className="relative z-10 text-sm font-semibold uppercase tracking-wider text-panther-amber">See models</span>
+                <span className="relative z-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-panther-amber group-hover:text-white transition-colors">
+                  See models &rarr;
+                </span>
               </Link>
             );
           })}

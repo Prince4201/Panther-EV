@@ -99,19 +99,30 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
           </div>
         </div>
 
-        {/* Previous / next arrows (Admin > Settings). Phones and tablets: bottom right, above the bottom bar. */}
-        {total > 1 && settings.showArrows && <div className="absolute bottom-[60px] right-5 flex gap-2 sm:right-8 lg:hidden">{arrows}</div>}
-
-        {/* Indicators. On desktop the arrows sit in this row too, so the bottom-right corner stays free for the Quick Enquiry button. */}
+        {/* Carousel dock (Indicators, pause/play, and next/prev arrows) */}
         {total > 1 && (settings.showIndicators || settings.showArrows) && (
-          <div className="absolute inset-x-0 bottom-[68px] flex items-center gap-3 px-5 sm:px-8 lg:bottom-6 lg:pl-[5vw]">
-            {settings.showIndicators && <SlideIndicators slides={slides} index={index} running={running} duration={slideMs} onSelect={(i) => go(i)} />}
-            {settings.showIndicators && autoplay && (
-              <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Play slideshow' : 'Pause slideshow'} className="ml-1 flex h-8 w-8 items-center justify-center text-white/80 transition-colors hover:text-white">
-                {userPaused ? <Play className="h-4 w-4" aria-hidden /> : <Pause className="h-4 w-4" aria-hidden />}
-              </button>
-            )}
-            {settings.showArrows && <div className="hidden gap-2 lg:ml-3 lg:flex">{arrows}</div>}
+          <div className="absolute inset-x-0 bottom-[54px] z-20 flex items-center px-5 sm:px-8 lg:bottom-7 lg:pl-[5vw]">
+            <div className="inline-flex items-center gap-3 rounded-full bg-black/45 backdrop-blur-md border border-white/15 px-4 py-2 shadow-2xl shadow-black/40">
+              {settings.showIndicators && <SlideIndicators slides={slides} index={index} running={running} duration={slideMs} onSelect={(i) => go(i)} />}
+              {settings.showIndicators && autoplay && (
+                <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95">
+                  {userPaused ? <Play className="h-3.5 w-3.5 fill-current" aria-hidden /> : <Pause className="h-3.5 w-3.5 fill-current" aria-hidden />}
+                </button>
+              )}
+              {settings.showArrows && (
+                <div className="flex items-center gap-1 border-l border-white/20 pl-2">
+                  <button onClick={() => go(index - 1, -1)} aria-label="Previous vehicle"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95">
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </button>
+                  <button onClick={() => go(index + 1, 1)} aria-label="Next vehicle"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95">
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -33,7 +33,7 @@ export function WhyPanther() {
               </motion.div>
             </AnimatePresence>
             <ol className="mt-10 flex gap-2" aria-label="Progress">
-              {whyPanther.map((w, n) => <li key={w.title} className={cn('h-1 w-12 transition-colors', n === i ? 'bg-panther-red' : 'bg-white/20')}><span className="sr-only">{w.title}</span></li>)}
+              {whyPanther.map((w, n) => <li key={w.title} className={cn('h-1.5 w-12 rounded-full transition-all duration-300', n === i ? 'bg-panther-red shadow-[0_0_8px_rgba(228,32,43,0.8)]' : 'bg-white/20')}><span className="sr-only">{w.title}</span></li>)}
             </ol>
           </div>
           <div className="relative aspect-[4/3] w-full">
