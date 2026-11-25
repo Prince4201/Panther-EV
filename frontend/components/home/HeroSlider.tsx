@@ -12,7 +12,7 @@ const DEFAULT_MS = 3000;
 
 /**
  * Home hero. One fixed golden sunset-road background that never moves; only the vehicle (slides left out, enters from the right)
- * and the text (rises from below) change. Timing, transition, hover-pause, indicators and arrows all come from Admin > Settings. Vehicle on the right, text on the left from lg up; text on top and vehicle below on smaller screens.
+ * and the text (rises from below) change. Timing, transition, hover-pause, indicators and arrows all come from Admin > Settings.
  */
 export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; settings: HeroSettings }) {
   const reduce = useReducedMotion();
@@ -26,7 +26,6 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
   const autoplay = settings.autoplay && !reduce && total > 1;
   const running = autoplay && !userPaused && !tabHidden && !(settings.pauseOnHover && hovered);
   const slide = slides[Math.min(index, total - 1)];
-  // A banner's own time wins; otherwise "Time on each banner" from Admin > Settings.
   const slideMs = slide.duration ?? settings.duration ?? DEFAULT_MS;
   const variants = settings.transition === 'fade' ? vehicleFadeVariants : vehicleVariants;
 
@@ -41,7 +40,6 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
     return () => clearTimeout(t);
   }, [running, index, go, slideMs]);
 
-  // If banners were removed in the admin panel while this page is open, never point past the end of the list.
   useEffect(() => { if (index >= total) setIndex(0); }, [index, total]);
 
   useEffect(() => {
@@ -55,14 +53,6 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
     if (info.offset.x < 0) go(index + 1, 1); else go(index - 1, -1);
   };
 
-  const arrowBtn = 'flex h-10 w-10 items-center justify-center border border-white/40 text-white/90 transition-colors hover:border-white hover:bg-white hover:text-ink';
-  const arrows = (
-    <>
-      <button onClick={() => go(index - 1, -1)} aria-label="Previous vehicle" className={arrowBtn}><ChevronLeft className="h-5 w-5" aria-hidden /></button>
-      <button onClick={() => go(index + 1, 1)} aria-label="Next vehicle" className={arrowBtn}><ChevronRight className="h-5 w-5" aria-hidden /></button>
-    </>
-  );
-
   return (
     <motion.section aria-roledescription="carousel" aria-label="Featured Panther vehicles" tabIndex={0}
       onPanEnd={total > 1 ? onPanEnd : undefined}
@@ -70,11 +60,21 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
       onKeyDown={(e) => { if (e.key === 'ArrowRight') go(index + 1, 1); if (e.key === 'ArrowLeft') go(index - 1, -1); }}
       className="relative h-[min(calc(100svh-72px),820px)] min-h-[640px] touch-pan-y select-none overflow-hidden bg-ink focus-visible:outline-offset-[-6px] lg:h-[calc(100svh-80px)] lg:min-h-[600px] lg:max-h-[860px]">
 
-      {/* Fixed background: never animates. */}
-      <Image src="/hero/golden-sunset-road.png" alt="" fill priority sizes="100vw" className="object-cover object-[30%_center] lg:object-center" />
-      {/* Subtle dark treatment (background only, no blur) so the white headline stays readable; sunset, hills and road stay clearly visible. */}
-      <div aria-hidden className="absolute inset-0 bg-black/[0.16]" />
+      {/* Fixed background with cinematic treatment */}
+      <Image src="/hero/golden-sunset-road.jpg" alt="Panther electric rickshaw on highway at sunset" fill priority sizes="100vw"
+        className="object-cover object-[30%_center] lg:object-center saturate-[1.08] contrast-[1.04]" />
+
+      {/* Multi-layer cinematic depth */}
+      {/* Base darkening */}
+      <div aria-hidden className="absolute inset-0 bg-black/[0.14]" />
+      {/* Text-side readability gradient */}
       <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,14,0.55)_0%,rgba(10,11,14,0.22)_38%,rgba(10,11,14,0)_58%)] lg:bg-[linear-gradient(90deg,rgba(10,11,14,0.6)_0%,rgba(10,11,14,0.36)_30%,rgba(10,11,14,0.06)_48%,rgba(10,11,14,0)_58%)]" />
+      {/* Warm cinematic ground anchor */}
+      <div aria-hidden className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+      {/* Golden sun rim light */}
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_15%,rgba(255,165,60,0.08),transparent_50%)] mix-blend-screen" />
+      {/* Vignette for cinematic framing */}
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.25)_100%)]" />
 
       <div className="relative mx-auto h-full max-w-page">
         {/* Vehicle: right side on desktop, lower/right on tablet and phone. */}
@@ -87,7 +87,7 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
           </AnimatePresence>
         </div>
 
-        {/* Text: left side on desktop, top on tablet and phone. All slides share one grid cell so the layout never jumps. */}
+        {/* Text: left side on desktop, top on tablet and phone. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 px-5 pt-10 sm:px-8 sm:pt-14 lg:bottom-0 lg:flex lg:w-[42%] lg:items-center lg:pb-16 lg:pl-[5vw] lg:pr-0 lg:pt-0">
           <div className="grid w-full max-w-[34rem] text-white lg:max-w-none">
             <AnimatePresence initial={false}>
@@ -99,10 +99,10 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
           </div>
         </div>
 
-        {/* Carousel dock (Indicators, pause/play, and next/prev arrows) */}
+        {/* Carousel dock */}
         {total > 1 && (settings.showIndicators || settings.showArrows) && (
           <div className="absolute inset-x-0 bottom-[54px] z-20 flex items-center px-5 sm:px-8 lg:bottom-7 lg:pl-[5vw]">
-            <div className="inline-flex items-center gap-3 rounded-full bg-black/45 backdrop-blur-md border border-white/15 px-4 py-2 shadow-2xl shadow-black/40">
+            <div className="inline-flex items-center gap-3 rounded-full bg-black/50 backdrop-blur-md border border-white/15 px-4 py-2 shadow-2xl shadow-black/40">
               {settings.showIndicators && <SlideIndicators slides={slides} index={index} running={running} duration={slideMs} onSelect={(i) => go(i)} />}
               {settings.showIndicators && autoplay && (
                 <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Play slideshow' : 'Pause slideshow'}

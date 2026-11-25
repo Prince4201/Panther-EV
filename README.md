@@ -127,7 +127,7 @@ Deactivating bumps the session version (signed out at once); removing deletes th
 ## Quick Enquiry fields, logo size, footer credit (latest)
 - **Quick Enquiry** asks for full name, phone and message only (all required). `POST /api/inquiries/quick` validates just those three; `email`, `city` and `vehicleInterest` stay on the `Inquiry` model as optional fields so older enquiries still display.
 - **Logo size**: `FinancePartner.logoScale` (percent, 50-500, default 100; partners without a value show at 100). Set it in Admin > Finance > Edit company (slider, - / +, Reset, live preview). Applied as a CSS transform in `PartnerLogoCard`, so the Finance page, "Latest from Panther" and the footer all use it; the uploaded file and the card size are untouched and the logo area clips anything larger than the card.
-- **Footer credit**: "Designed by Ritesh and Subhasini" under the copyright line; each name is its own link, opening in a new tab.
+- **Footer credit**: "Designed by Panther team" under the copyright line; each name is its own link, opening in a new tab.
 
 ## Speed, partner limit, footer credit position (latest)
 - **Images**: `frontend/next.config.mjs` now keeps optimised images for 30 days (`minimumCacheTTL`; the default 60 s re-encoded the 1.4-2.7 MB hero PNGs constantly) and serves WebP only (AVIF encoding was slow). If you replace a file in `frontend/public` under the SAME name, delete `frontend/.next/cache/images` so the old copy is dropped.

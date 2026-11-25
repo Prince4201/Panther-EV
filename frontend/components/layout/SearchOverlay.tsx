@@ -61,7 +61,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
             className="w-full bg-transparent font-display text-3xl text-white placeholder:text-white/40 focus:outline-none md:text-5xl" />
         </div>
         <ul className="mt-6" role="listbox">
-          {items.length === 0 && <li className="py-4 text-white/60">No results for “{q}”. Try a vehicle name like “XL”.</li>}
+          {items.length === 0 && <li className="py-4 text-white/60">No results for &ldquo;{q}&rdquo;. Try a vehicle name like &ldquo;XL&rdquo;.</li>}
           {items.map((i, idx) => (
             <li key={i.href + i.label} role="option" aria-selected={idx === active}>
               <button onClick={() => go(i.href)} onMouseEnter={() => setActive(idx)}

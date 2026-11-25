@@ -14,17 +14,24 @@ export function Business() {
     <section aria-labelledby="biz-title" className="bg-fog py-20 md:py-32">
       <div className="mx-auto grid max-w-page gap-16 px-5 md:px-10 lg:grid-cols-[5fr_6fr]">
         <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-panther-red">Why Choose Us</p>
           <h2 id="biz-title" className="font-display text-6xl leading-[0.9] md:text-8xl">Built for business</h2>
           <p className="mt-6 max-w-md text-lg text-steel">Panther builds electric commercial vehicles for people who earn their living on the road.</p>
           <dl className="mt-12 grid grid-cols-2 gap-8 border-t border-ink pt-8">
-            <div><dt className="text-sm text-steel">Vehicles on Indian roads</dt><dd className="font-display text-5xl md:text-6xl"><Counter to={site.stats.vehicles} suffix="+" /></dd></div>
-            <div><dt className="text-sm text-steel">Years of proven performance</dt><dd className="font-display text-5xl md:text-6xl"><Counter to={site.stats.years} suffix="+" /></dd></div>
+            <div>
+              <dt className="text-sm text-steel">Vehicles on Indian roads</dt>
+              <dd className="font-display text-5xl md:text-6xl"><Counter to={site.stats.vehicles} suffix="+" /></dd>
+            </div>
+            <div>
+              <dt className="text-sm text-steel">Years of proven performance</dt>
+              <dd className="font-display text-5xl md:text-6xl"><Counter to={site.stats.years} suffix="+" /></dd>
+            </div>
           </dl>
         </div>
         <ul className="self-end">
-          {points.map(([t, b]) => (
-            <li key={t} className="grid gap-1 border-t border-line py-6 md:grid-cols-[1fr_1fr] md:gap-8 first:border-t-ink">
-              <h3 className="font-display text-3xl md:text-4xl">{t}</h3>
+          {points.map(([t, b], idx) => (
+            <li key={t} className="group grid gap-1 border-t border-line py-6 md:grid-cols-[1fr_1fr] md:gap-8 first:border-t-ink transition-colors hover:bg-white/50">
+              <h3 className="font-display text-3xl md:text-4xl transition-colors duration-300 group-hover:text-panther-red">{t}</h3>
               <p className="text-steel">{b}</p>
             </li>
           ))}

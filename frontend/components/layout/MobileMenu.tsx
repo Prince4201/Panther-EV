@@ -21,7 +21,7 @@ export function MobileMenu({ onClose }: { onClose: () => void }) {
   const { products, categories } = useCatalog();
   return (
     <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.28 }}
-      role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-[55] overflow-y-auto bg-white/98 backdrop-blur-xl text-ink">
+      role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-[55] overflow-y-auto bg-white text-ink">
       <div className="flex h-[72px] items-center justify-between border-b border-line px-5">
         <Link href="/" onClick={onClose} aria-label="Panther EV home">
           <Image src="/brand/panther-logo.png" alt="Panther" width={391} height={186} className="h-9 w-auto" />

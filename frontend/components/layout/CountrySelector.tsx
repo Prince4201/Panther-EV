@@ -35,7 +35,7 @@ export function CountrySelector({ className, align = 'right', up = false, flagOn
       </button>
       {open && (
         <ul role="listbox" aria-label="Choose country" className={cn(
-          'absolute z-[70] w-56 rounded-2xl border border-line/80 bg-white/98 p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)] backdrop-blur-xl ring-1 ring-black/5 text-ink animate-in fade-in zoom-in-95 duration-150',
+          'absolute z-[80] w-56 rounded-2xl border border-line bg-white p-1.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.22)] ring-1 ring-black/5 text-ink animate-in fade-in zoom-in-95 duration-150',
           up ? 'bottom-full mb-2' : 'top-full mt-2',
           align === 'right' ? 'right-0' : 'left-0'
         )}>
