@@ -11,7 +11,19 @@ import { errorHandler, notFound } from './middleware/error.js';
 const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
+app.set('etag', false); // Never generate ETags for dynamic API responses, eliminating 304 on auth checks
 app.use(helmet());
+
+// Ensure all authentication and dynamic API responses are never cached by browsers or edge proxies
+app.use('/api', (req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store',
+  });
+  next();
+});
 
 const allowedOrigins = [
   env.frontendUrl,

@@ -19,5 +19,14 @@ const nextConfig = {
       { source: '/admin/inquiries/:id', destination: '/admin/enquiries/:id', permanent: false },
     ];
   },
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_API_URL || 'https://panther-ev-backend.onrender.com';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl.replace(/\/+$/, '')}/api/:path*`,
+      },
+    ];
+  },
 };
 export default nextConfig;

@@ -19,11 +19,13 @@ const getSameSite = () => {
 
 // Production cross-site authentication (Vercel frontend -> Render backend):
 // Modern browsers require SameSite=None; Secure; HttpOnly; Path=/ for cross-site cookie transmission.
-// Local development over plain HTTP uses SameSite=Lax (browsers reject SameSite=None without Secure).
+// In addition, CHIPS (Partitioned) ensures modern browsers with 3rd-party cookie restrictions store and send the cookie.
+// Local development over plain HTTP uses SameSite=Lax without Secure or Partitioned.
 export const cookieOptions = {
   httpOnly: true,
   get secure() { return isSecure(); },
   get sameSite() { return getSameSite(); },
+  get partitioned() { return isSecure(); },
   path: '/',
   maxAge: 8 * 60 * 60 * 1000,
 };
@@ -32,17 +34,29 @@ export const userCookieOptions = {
   httpOnly: true,
   get secure() { return isSecure(); },
   get sameSite() { return getSameSite(); },
+  get partitioned() { return isSecure(); },
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-// Explicit cookie-clearing options with identical path, secure, and sameSite attributes
+// Explicit cookie-clearing options with identical path, secure, sameSite, and partitioned attributes
 export const clearCookieOptions = {
   httpOnly: true,
   get secure() { return isSecure(); },
   get sameSite() { return getSameSite(); },
+  get partitioned() { return isSecure(); },
   path: '/',
 };
+
+// Robust cookie extraction supporting parsed cookies, signed cookies, and raw header fallback
+export function getCookie(req, name) {
+  if (req?.cookies && req.cookies[name]) return req.cookies[name];
+  if (req?.signedCookies && req.signedCookies[name]) return req.signedCookies[name];
+  const header = req?.headers?.cookie;
+  if (!header) return null;
+  const match = header.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 // The token carries only the account id, which table it lives in and a session version.
 // The ROLE is always read from the database, never from the token or the browser, so it cannot be forged or escalated.
@@ -50,24 +64,35 @@ export const signAdminToken = (admin) => jwt.sign({ sub: admin.id, kind: 'admin'
 export const signUserToken = (user) => jwt.sign({ sub: user.id, kind: 'user', tv: user.tokenVersion || 0 }, env.jwtSecret, { expiresIn: '7d' });
 
 async function loadAdmin(req) {
-  const token = req.cookies?.[COOKIE_NAME];
+  const token = getCookie(req, COOKIE_NAME);
   if (!token) return null;
-  const p = jwt.verify(token, env.jwtSecret);
-  if (p.kind !== 'admin') return null;
-  const { rows } = await query('SELECT * FROM admins WHERE id = $1', [p.sub]);
-  const admin = mapAdmin(rows[0]);
-  if (!admin || !admin.active || (admin.tokenVersion || 0) !== (p.tv || 0)) return null;
-  return admin;
+  try {
+    const p = jwt.verify(token, env.jwtSecret);
+    if (p.kind !== 'admin') return null;
+    const { rows } = await query('SELECT * FROM admins WHERE id = $1', [p.sub]);
+    if (!rows.length) return null;
+    const admin = mapAdmin(rows[0]);
+    if (!admin || !admin.active || (admin.tokenVersion || 0) !== (p.tv || 0)) return null;
+    return admin;
+  } catch {
+    return null;
+  }
 }
+
 async function loadUser(req) {
-  const token = req.cookies?.[USER_COOKIE];
+  const token = getCookie(req, USER_COOKIE);
   if (!token) return null;
-  const p = jwt.verify(token, env.jwtSecret);
-  if (p.kind !== 'user') return null;
-  const { rows } = await query('SELECT * FROM users WHERE id = $1', [p.sub]);
-  const user = mapUser(rows[0]);
-  if (!user || !user.active || (user.tokenVersion || 0) !== (p.tv || 0)) return null;
-  return user;
+  try {
+    const p = jwt.verify(token, env.jwtSecret);
+    if (p.kind !== 'user') return null;
+    const { rows } = await query('SELECT * FROM users WHERE id = $1', [p.sub]);
+    if (!rows.length) return null;
+    const user = mapUser(rows[0]);
+    if (!user || !user.active || (user.tokenVersion || 0) !== (p.tv || 0)) return null;
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 /** Reads whichever session cookie is present. Never throws; returns null when signed out. */

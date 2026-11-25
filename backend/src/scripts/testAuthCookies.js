@@ -1,4 +1,5 @@
 import http from 'node:http';
+import jwt from 'jsonwebtoken';
 import app from '../app.js';
 import { env } from '../config/env.js';
 import { query } from '../config/pg.js';
@@ -55,7 +56,7 @@ function req(server, options, bodyData = null) {
 
 async function run() {
   console.log('='.repeat(60));
-  console.log('Panther EV Authentication Cookie & CORS Verification');
+  console.log('Panther EV Comprehensive Authentication & Session Verification');
   console.log('='.repeat(60));
 
   // Ensure test accounts exist in database
@@ -65,10 +66,11 @@ async function run() {
   const hash = await bcrypt.hash(testPass, 10);
 
   await query('DELETE FROM users WHERE email = $1', [testUserEmail]);
-  await query(
-    'INSERT INTO users (name, email, password_hash, active, created_at, last_active_at) VALUES ($1, $2, $3, true, NOW(), NOW())',
+  const userInsertRes = await query(
+    'INSERT INTO users (name, email, password_hash, active, created_at, last_active_at) VALUES ($1, $2, $3, true, NOW(), NOW()) RETURNING id',
     ['Test User', testUserEmail, hash]
   );
+  const testUserId = userInsertRes.rows[0].id;
 
   const existingAdmin = await query('SELECT * FROM admins WHERE email = $1', [testAdminEmail]);
   if (!existingAdmin.rows.length) {
@@ -117,7 +119,7 @@ async function run() {
       process.exit(1);
     }
 
-    // 1B. User Login
+    // 1B. User Login & Cookie Creation
     console.log('\n1B. Testing POST /api/auth/login (Customer)...');
     const userLogin = await req(
       server,
@@ -137,27 +139,31 @@ async function run() {
     console.log('User Cookie headers:');
     userLogin.cookies.forEach((c) => console.log('  ->', c.raw));
 
-    const userCookie = userLogin.cookies.find((c) => c.name === 'panther_user' && c.value);
-    if (!userCookie) {
-      console.error('✗ FAIL: panther_user cookie was not issued');
+    // Verify NO duplicate Set-Cookie for panther_user
+    const userCookies = userLogin.cookies.filter((c) => c.name === 'panther_user');
+    if (userCookies.length !== 1) {
+      console.error(`✗ FAIL: Expected exactly 1 panther_user Set-Cookie header, got ${userCookies.length} (duplicate deletion+set bug!)`);
       process.exit(1);
     }
+    console.log('✓ PASS: No conflicting duplicate Set-Cookie: panther_user headers sent');
 
+    const userCookie = userCookies[0];
     const sameSiteVal = userCookie.flags['samesite']?.toLowerCase();
     const isSecure = !!userCookie.flags['secure'];
     const isHttpOnly = !!userCookie.flags['httponly'];
+    const isPartitioned = !!userCookie.flags['partitioned'];
     const pathVal = userCookie.flags['path'];
 
-    if (sameSiteVal === 'none' && isSecure && isHttpOnly && pathVal === '/') {
-      console.log('✓ PASS: panther_user cookie correctly set with SameSite=None, Secure, HttpOnly, Path=/');
+    if (sameSiteVal === 'none' && isSecure && isHttpOnly && isPartitioned && pathVal === '/') {
+      console.log('✓ PASS: panther_user cookie correctly configured with SameSite=None, Secure, HttpOnly, Partitioned, Path=/');
     } else {
-      console.error(`✗ FAIL: Cookie attributes invalid! SameSite=${sameSiteVal}, Secure=${isSecure}, HttpOnly=${isHttpOnly}, Path=${pathVal}`);
+      console.error(`✗ FAIL: Cookie attributes invalid! SameSite=${sameSiteVal}, Secure=${isSecure}, HttpOnly=${isHttpOnly}, Partitioned=${isPartitioned}, Path=${pathVal}`);
       process.exit(1);
     }
 
-    // 1C. User GET /api/auth/me (Simulate page load / refresh on /account)
-    console.log('\n1C. Testing GET /api/auth/me with panther_user cookie (Account refresh simulation)...');
-    const meRes = await req(server, {
+    // 1C. Cache-Control and ETag Verification on /api/auth/me
+    console.log('\n1C. Testing Cache-Control, ETag, and Conditional GET on /api/auth/me...');
+    const initialMeRes = await req(server, {
       path: '/api/auth/me',
       method: 'GET',
       headers: {
@@ -166,18 +172,143 @@ async function run() {
       },
     });
 
-    console.log('Me status:', meRes.status);
-    console.log('Me body role:', meRes.body?.role);
-    console.log('Me body user:', meRes.body?.account?.email);
-    if (meRes.status === 200 && meRes.body?.role === 'user' && meRes.body?.account?.email === testUserEmail) {
-      console.log('✓ PASS: GET /api/auth/me authenticated successfully via cross-site panther_user cookie!');
+    console.log('Cache-Control:', initialMeRes.headers['cache-control']);
+    console.log('ETag header present:', !!initialMeRes.headers['etag']);
+    if (
+      initialMeRes.headers['cache-control']?.includes('no-store') &&
+      !initialMeRes.headers['etag']
+    ) {
+      console.log('✓ PASS: Cache-Control: no-store set and ETag disabled (eliminates 304 caching bug)');
     } else {
-      console.error('✗ FAIL: GET /api/auth/me failed to authenticate with cookie');
+      console.error('✗ FAIL: Cache-Control missing no-store or ETag still present');
       process.exit(1);
     }
 
-    // 1D. User Logout
-    console.log('\n1D. Testing POST /api/auth/logout...');
+    // Verify conditional request (If-None-Match) NEVER returns 304
+    const conditionalMeRes = await req(server, {
+      path: '/api/auth/me',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        'If-None-Match': 'W/"1c-e7wIeT97aC10p+nsuC7p6x8VzVU"',
+        Cookie: `panther_user=${userCookie.value}`,
+      },
+    });
+    console.log('Conditional request status:', conditionalMeRes.status);
+    if (conditionalMeRes.status === 200 && conditionalMeRes.body?.role === 'user') {
+      console.log('✓ PASS: Conditional request returns 200 OK with fresh data (NEVER 304 Not Modified)');
+    } else {
+      console.error(`✗ FAIL: Expected 200 OK, got ${conditionalMeRes.status}`);
+      process.exit(1);
+    }
+
+    // 1D. Authenticated /api/auth/my-inquiries
+    console.log('\n1D. Testing GET /api/auth/my-inquiries with authenticated customer cookie...');
+    const inqRes = await req(server, {
+      path: '/api/auth/my-inquiries',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        Cookie: `panther_user=${userCookie.value}`,
+      },
+    });
+    console.log('My-inquiries status:', inqRes.status);
+    console.log('My-inquiries response:', JSON.stringify(inqRes.body));
+    if (inqRes.status === 200 && Array.isArray(inqRes.body?.inquiries)) {
+      console.log('✓ PASS: GET /api/auth/my-inquiries returns 200 OK with inquiries array!');
+    } else {
+      console.error('✗ FAIL: GET /api/auth/my-inquiries failed to authenticate');
+      process.exit(1);
+    }
+
+    // 1E. Unauthenticated /api/auth/my-inquiries (Must return 401)
+    console.log('\n1E. Testing GET /api/auth/my-inquiries without cookie (Expected 401)...');
+    const unauthInq = await req(server, {
+      path: '/api/auth/my-inquiries',
+      method: 'GET',
+      headers: { Origin: vercelOrigin },
+    });
+    console.log('Unauthenticated status:', unauthInq.status);
+    if (unauthInq.status === 401) {
+      console.log('✓ PASS: Unauthenticated request rejected with HTTP 401 as expected');
+    } else {
+      console.error(`✗ FAIL: Expected 401, got ${unauthInq.status}`);
+      process.exit(1);
+    }
+
+    // 1F. Page Refresh Simulation (Multiple GET /api/auth/me requests)
+    console.log('\n1F. Testing simulated browser page refresh on /account...');
+    const refreshMeRes = await req(server, {
+      path: '/api/auth/me',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        Cookie: `panther_user=${userCookie.value}`,
+      },
+    });
+    if (refreshMeRes.status === 200 && refreshMeRes.body?.role === 'user' && refreshMeRes.body?.account?.email === testUserEmail) {
+      console.log('✓ PASS: Page refresh preserves authentication state seamlessly');
+    } else {
+      console.error('✗ FAIL: Page refresh failed to restore session');
+      process.exit(1);
+    }
+
+    // 1G. Invalid & Expired Token Rejection
+    console.log('\n1G. Testing invalid / expired / tampered token handling...');
+    // Tampered token
+    const tamperedRes = await req(server, {
+      path: '/api/auth/me',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        Cookie: `panther_user=${userCookie.value}invalidSignature`,
+      },
+    });
+    if (tamperedRes.status === 200 && tamperedRes.body?.role === null && tamperedRes.body?.account === null) {
+      console.log('✓ PASS: Tampered token safely rejected by /api/auth/me (returns null session without 500)');
+    } else {
+      console.error('✗ FAIL: Tampered token not handled safely');
+      process.exit(1);
+    }
+
+    const tamperedInq = await req(server, {
+      path: '/api/auth/my-inquiries',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        Cookie: `panther_user=${userCookie.value}invalidSignature`,
+      },
+    });
+    if (tamperedInq.status === 401) {
+      console.log('✓ PASS: Tampered token returns 401 on protected endpoint');
+    } else {
+      console.error('✗ FAIL: Tampered token should return 401 on protected endpoint');
+      process.exit(1);
+    }
+
+    // Expired token simulation
+    const expiredToken = jwt.sign(
+      { sub: testUserId, kind: 'user', tv: 0 },
+      env.jwtSecret,
+      { expiresIn: '-1s' }
+    );
+    const expiredInq = await req(server, {
+      path: '/api/auth/my-inquiries',
+      method: 'GET',
+      headers: {
+        Origin: vercelOrigin,
+        Cookie: `panther_user=${expiredToken}`,
+      },
+    });
+    if (expiredInq.status === 401) {
+      console.log('✓ PASS: Expired token returns 401 on protected endpoint');
+    } else {
+      console.error('✗ FAIL: Expired token should return 401');
+      process.exit(1);
+    }
+
+    // 1H. User Logout
+    console.log('\n1H. Testing POST /api/auth/logout...');
     const logoutRes = await req(server, {
       path: '/api/auth/logout',
       method: 'POST',
@@ -196,30 +327,17 @@ async function run() {
       clearedUserCookie &&
       clearedUserCookie.flags['samesite']?.toLowerCase() === 'none' &&
       clearedUserCookie.flags['secure'] &&
+      clearedUserCookie.flags['partitioned'] &&
       clearedUserCookie.flags['path'] === '/'
     ) {
-      console.log('✓ PASS: panther_user cookie cleared with matching Path=/, Secure, SameSite=None');
+      console.log('✓ PASS: panther_user cookie cleared with matching Path=/, Secure, SameSite=None, Partitioned');
     } else {
       console.error('✗ FAIL: Clear cookie attributes do not match creation attributes');
       process.exit(1);
     }
 
-    // 1E. Subsequent GET /api/auth/me after logout
-    console.log('\n1E. Verifying GET /api/auth/me after logout returns null...');
-    const postLogoutMe = await req(server, {
-      path: '/api/auth/me',
-      method: 'GET',
-      headers: { Origin: vercelOrigin },
-    });
-    if (postLogoutMe.body?.role === null && postLogoutMe.body?.account === null) {
-      console.log('✓ PASS: Signed-out state verified (role: null, account: null)');
-    } else {
-      console.error('✗ FAIL: Signed-out state failed');
-      process.exit(1);
-    }
-
-    // 1F. Admin Login via POST /api/admin/login
-    console.log('\n1F. Testing POST /api/admin/login (Admin authentication)...');
+    // 1I. Admin Authentication (POST /api/admin/login -> GET /api/admin/me -> POST /api/admin/logout)
+    console.log('\n1I. Testing Admin authentication lifecycle...');
     const adminLogin = await req(
       server,
       {
@@ -240,16 +358,15 @@ async function run() {
       adminCookie.flags['samesite']?.toLowerCase() === 'none' &&
       adminCookie.flags['secure'] &&
       adminCookie.flags['httponly'] &&
+      adminCookie.flags['partitioned'] &&
       adminCookie.flags['path'] === '/'
     ) {
-      console.log('✓ PASS: panther_admin cookie correctly set with SameSite=None, Secure, HttpOnly, Path=/');
+      console.log('✓ PASS: panther_admin cookie correctly set with SameSite=None, Secure, HttpOnly, Partitioned, Path=/');
     } else {
       console.error('✗ FAIL: panther_admin cookie attributes invalid');
       process.exit(1);
     }
 
-    // 1G. Admin GET /api/admin/me
-    console.log('\n1G. Testing GET /api/admin/me with panther_admin cookie...');
     const adminMeRes = await req(server, {
       path: '/api/admin/me',
       method: 'GET',
@@ -258,8 +375,6 @@ async function run() {
         Cookie: `panther_admin=${adminCookie.value}`,
       },
     });
-    console.log('Admin Me status:', adminMeRes.status);
-    console.log('Admin email:', adminMeRes.body?.admin?.email);
     if (adminMeRes.status === 200 && adminMeRes.body?.admin?.email === testAdminEmail) {
       console.log('✓ PASS: GET /api/admin/me authenticated successfully via cross-site panther_admin cookie!');
     } else {
@@ -267,8 +382,6 @@ async function run() {
       process.exit(1);
     }
 
-    // 1H. Admin Logout
-    console.log('\n1H. Testing POST /api/admin/logout...');
     const adminLogoutRes = await req(server, {
       path: '/api/admin/logout',
       method: 'POST',
@@ -282,9 +395,10 @@ async function run() {
       clearedAdminCookie &&
       clearedAdminCookie.flags['samesite']?.toLowerCase() === 'none' &&
       clearedAdminCookie.flags['secure'] &&
+      clearedAdminCookie.flags['partitioned'] &&
       clearedAdminCookie.flags['path'] === '/'
     ) {
-      console.log('✓ PASS: panther_admin cookie cleared with matching SameSite=None, Secure, Path=/');
+      console.log('✓ PASS: panther_admin cookie cleared with matching SameSite=None, Secure, Partitioned, Path=/');
     } else {
       console.error('✗ FAIL: panther_admin clear cookie attributes do not match');
       process.exit(1);
@@ -297,7 +411,6 @@ async function run() {
     process.env.NODE_ENV = 'development';
     env.isProd = false;
 
-    console.log('\n2A. Testing POST /api/auth/login in Development Mode...');
     const devLogin = await req(
       server,
       {

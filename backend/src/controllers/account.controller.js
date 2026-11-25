@@ -69,7 +69,7 @@ export async function login(req, res) {
     await query('UPDATE admins SET last_login_at = $1 WHERE id = $2', [now, admin.id]);
     admin.lastLoginAt = now;
 
-    clear(res);
+    res.clearCookie(USER_COOKIE, clearCookieOptions);
     res.cookie(COOKIE_NAME, signAdminToken(admin), cookieOptions);
     return res.json({ role: admin.role, account: publicAccount(admin, 'admin') });
   }
@@ -84,7 +84,7 @@ export async function login(req, res) {
   await query('UPDATE users SET last_active_at = $1 WHERE id = $2', [now, user.id]);
   user.lastActiveAt = now;
 
-  clear(res);
+  res.clearCookie(COOKIE_NAME, clearCookieOptions);
   res.cookie(USER_COOKIE, signUserToken(user), userCookieOptions);
   res.json({ role: ROLES.USER, account: publicAccount(user, 'user') });
 }
@@ -112,7 +112,7 @@ export async function register(req, res) {
   );
 
   const user = mapUser(rows[0]);
-  clear(res);
+  res.clearCookie(COOKIE_NAME, clearCookieOptions);
   res.cookie(USER_COOKIE, signUserToken(user), userCookieOptions);
   res.status(201).json({ role: ROLES.USER, account: publicAccount(user, 'user') });
 }
@@ -124,6 +124,11 @@ export const logout = (_req, res) => {
 
 /** Always 200 so a signed-out visit does not log an error in the browser console. */
 export async function me(req, res) {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  });
   const s = await readSession(req);
   if (!s) return res.json({ role: null, account: null });
   res.json({ role: s.role, account: publicAccount(s.account, s.kind) });
