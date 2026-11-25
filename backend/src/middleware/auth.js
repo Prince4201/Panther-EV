@@ -5,9 +5,44 @@ import { mapAdmin, mapUser } from '../lib/mappers.js';
 import { ROLES, can, canAny } from '../lib/permissions.js';
 
 export const COOKIE_NAME = 'panther_admin';
-export const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: env.isProd, maxAge: 8 * 60 * 60 * 1000, path: '/' };
 export const USER_COOKIE = 'panther_user';
-export const userCookieOptions = { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 };
+
+const isSecure = () => {
+  if (process.env.COOKIE_SECURE !== undefined) return process.env.COOKIE_SECURE === 'true';
+  return process.env.NODE_ENV === 'production' || env.isProd;
+};
+
+const getSameSite = () => {
+  if (process.env.COOKIE_SAME_SITE) return process.env.COOKIE_SAME_SITE;
+  return isSecure() ? 'none' : 'lax';
+};
+
+// Production cross-site authentication (Vercel frontend -> Render backend):
+// Modern browsers require SameSite=None; Secure; HttpOnly; Path=/ for cross-site cookie transmission.
+// Local development over plain HTTP uses SameSite=Lax (browsers reject SameSite=None without Secure).
+export const cookieOptions = {
+  httpOnly: true,
+  get secure() { return isSecure(); },
+  get sameSite() { return getSameSite(); },
+  path: '/',
+  maxAge: 8 * 60 * 60 * 1000,
+};
+
+export const userCookieOptions = {
+  httpOnly: true,
+  get secure() { return isSecure(); },
+  get sameSite() { return getSameSite(); },
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+// Explicit cookie-clearing options with identical path, secure, and sameSite attributes
+export const clearCookieOptions = {
+  httpOnly: true,
+  get secure() { return isSecure(); },
+  get sameSite() { return getSameSite(); },
+  path: '/',
+};
 
 // The token carries only the account id, which table it lives in and a session version.
 // The ROLE is always read from the database, never from the token or the browser, so it cannot be forged or escalated.

@@ -5,10 +5,11 @@ import {
   COOKIE_NAME,
   USER_COOKIE,
   cookieOptions,
+  userCookieOptions,
+  clearCookieOptions,
   readSession,
   signAdminToken,
   signUserToken,
-  userCookieOptions,
 } from '../middleware/auth.js';
 import { env } from '../config/env.js';
 import { sendMail } from '../config/mailer.js';
@@ -19,8 +20,8 @@ import { mapAdmin, mapUser, mapInquiry, mapInquiryActivity } from '../lib/mapper
 
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 12);
 const clear = (res) => {
-  res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: undefined });
-  res.clearCookie(USER_COOKIE, { ...userCookieOptions, maxAge: undefined });
+  res.clearCookie(COOKIE_NAME, clearCookieOptions);
+  res.clearCookie(USER_COOKIE, clearCookieOptions);
 };
 
 const addr = (a) => ({

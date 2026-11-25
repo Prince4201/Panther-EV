@@ -9,9 +9,17 @@ import routes from './routes/index.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet());
-app.use(cors({ origin: env.frontendUrl, credentials: true }));
+
+const allowedOrigins = [
+  env.frontendUrl,
+  'https://panther-ev.vercel.app',
+].filter(Boolean);
+
+const origins = [...new Set(allowedOrigins)];
+app.use(cors({ origin: origins.length === 1 ? origins[0] : origins, credentials: true }));
 app.use(morgan(env.isProd ? 'combined' : 'dev'));
 app.use(rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
 app.use(express.json({ limit: '100kb' }));

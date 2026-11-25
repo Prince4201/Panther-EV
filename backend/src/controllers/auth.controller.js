@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { query } from '../config/pg.js';
-import { COOKIE_NAME, cookieOptions, signAdminToken } from '../middleware/auth.js';
+import { COOKIE_NAME, cookieOptions, clearCookieOptions, signAdminToken } from '../middleware/auth.js';
 import { publicAccount } from './account.controller.js';
 import { mapAdmin } from '../lib/mappers.js';
 
@@ -25,7 +25,7 @@ export async function adminLogin(req, res) {
 }
 
 export const adminLogout = (_req, res) => {
-  res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: undefined });
+  res.clearCookie(COOKIE_NAME, clearCookieOptions);
   res.json({ message: 'Signed out.' });
 };
 
