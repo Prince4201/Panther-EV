@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ApiError, api } from '@/lib/api';
-import { useAuth, type Account } from './AuthProvider';
+import { useAuth, type Account, type Role } from './AuthProvider';
 
 const loginSchema = z.object({ email: z.string().trim().email('Enter a valid email'), password: z.string().min(1, 'Enter your password') });
 const registerSchema = z.object({
@@ -19,22 +19,49 @@ type Values = { name?: string; email: string; phone?: string; password: string }
 
 const input = 'w-full border border-line px-4 py-3 focus:border-ink focus:outline-none';
 
+function resolveSafeRedirect(nextParam: string | null, role: Role): string {
+  if (role !== 'user') return '/admin/dashboard';
+  if (!nextParam) return '/account';
+  if (!nextParam.startsWith('/') || nextParam.startsWith('//') || nextParam.startsWith('/\\')) {
+    return '/account';
+  }
+  const cleanPath = nextParam.split('?')[0].toLowerCase();
+  if (
+    cleanPath === '/login' ||
+    cleanPath === '/register' ||
+    cleanPath === '/forgot-password' ||
+    cleanPath === '/reset-password'
+  ) {
+    return '/account';
+  }
+  return nextParam;
+}
+
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const params = useSearchParams();
-  const { refresh } = useAuth();
+  const { account, role, loading, setAuth, refresh } = useAuth();
   const [error, setError] = useState('');
   const isLogin = mode === 'login';
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(isLogin ? loginSchema : registerSchema) as unknown as Resolver<Values> });
+
+  useEffect(() => {
+    if (!loading && account) {
+      const nextParam = params.get('next');
+      const target = resolveSafeRedirect(nextParam, role);
+      router.replace(target);
+    }
+  }, [loading, account, role, params, router]);
 
   const onSubmit = async (v: Values) => {
     setError('');
     try {
       const r = await api<{ role: 'super_admin' | 'admin' | 'user'; account: Account }>(isLogin ? '/auth/login' : '/auth/register', { method: 'POST', body: JSON.stringify(v) });
-      await refresh();
-      const next = params.get('next');
-      router.replace(r.role !== 'user' ? '/admin/dashboard' : next && next.startsWith('/') && !next.startsWith('//') ? next : '/account');
-      router.refresh();
+      setAuth(r.role, r.account);
+      refresh().catch(() => null);
+      const nextParam = params.get('next');
+      const target = resolveSafeRedirect(nextParam, r.role);
+      router.replace(target);
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not sign in. Please try again.'); }
   };
 
