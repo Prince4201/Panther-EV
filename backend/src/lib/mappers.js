@@ -46,8 +46,12 @@ export function mapUser(row) {
     passwordHash: row.password_hash,
     phone: row.phone || '',
     avatar: row.avatar || '',
+    location: row.location || '',
+    state: row.address_state || '',
+    latitude: row.latitude != null ? Number(row.latitude) : null,
+    longitude: row.longitude != null ? Number(row.longitude) : null,
     address: {
-      line1: row.address_line1 || '',
+      line1: row.address_line1 || row.location || '',
       city: row.address_city || '',
       state: row.address_state || '',
       pincode: row.address_pincode || '',

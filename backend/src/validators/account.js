@@ -5,6 +5,12 @@ export const registerSchema = z.object({
   email: z.string().trim().email('Enter a valid email'),
   phone: z.string().trim().regex(/^[0-9+\-\s]{7,20}$/, 'Enter a valid phone number').optional().or(z.literal('')),
   password: z.string().min(8, 'Use at least 8 characters').max(200),
+  location: z.string().trim().max(255).optional().default(''),
+  state: z.string().trim().max(100).optional().default(''),
+  city: z.string().trim().max(100).optional().default(''),
+  pincode: z.string().trim().max(20).optional().default(''),
+  lat: z.number().optional().nullable(),
+  lng: z.number().optional().nullable(),
 }).strict();
 
 // Quick Enquiry popup: name, phone and message only. Indian mobile number: 10 digits starting 6-9, with an optional

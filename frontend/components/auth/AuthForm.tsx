@@ -5,19 +5,46 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Crosshair,
+  Eye,
+  EyeOff,
+  Loader2,
+  MapPin,
+  ShieldCheck,
+} from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import { useAuth, type Account, type Role } from './AuthProvider';
+import { INDIAN_STATES, getStateTheme } from '@/data/stateThemes';
 
-const loginSchema = z.object({ email: z.string().trim().email('Enter a valid email'), password: z.string().min(1, 'Enter your password') });
-const registerSchema = z.object({
-  name: z.string().trim().min(2, 'Enter your name'),
-  email: z.string().trim().email('Enter a valid email'),
-  phone: z.string().trim().regex(/^[0-9+\-\s]{7,20}$/, 'Enter a valid phone number').or(z.literal('')),
-  password: z.string().min(8, 'Use at least 8 characters'),
+const loginSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address'),
+  password: z.string().min(1, 'Enter your password'),
 });
-type Values = { name?: string; email: string; phone?: string; password: string };
 
-const input = 'w-full border border-line px-4 py-3 focus:border-ink focus:outline-none';
+const registerSchema = z.object({
+  name: z.string().trim().min(2, 'Enter your full name'),
+  email: z.string().trim().email('Enter a valid email address'),
+  phone: z.string().trim().regex(/^[0-9+\-\s]{7,20}$/, 'Enter a valid phone number').or(z.literal('')),
+  location: z.string().trim().min(2, 'Location is required. Click "Detect My Live Location" or enter your location.'),
+  state: z.string().trim().min(2, 'Please select your state.'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+type Values = {
+  name?: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  state?: string;
+  city?: string;
+  pincode?: string;
+  lat?: number | null;
+  lng?: number | null;
+  password: string;
+};
 
 function resolveSafeRedirect(nextParam: string | null, role: Role): string {
   if (role !== 'user') return '/admin/dashboard';
@@ -37,13 +64,33 @@ function resolveSafeRedirect(nextParam: string | null, role: Role): string {
   return nextParam;
 }
 
+const inputClass =
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-ink placeholder:text-steel/50 transition-all focus:border-panther-red focus:outline-none focus:ring-4 focus:ring-panther-red/10';
+
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const params = useSearchParams();
   const { account, role, loading, setAuth, refresh } = useAuth();
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const isLogin = mode === 'login';
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(isLogin ? loginSchema : registerSchema) as unknown as Resolver<Values> });
+
+  // Live location detection state
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [detectedStateInfo, setDetectedStateInfo] = useState<{ state: string; pincode?: string } | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<Values>({
+    resolver: zodResolver(isLogin ? loginSchema : registerSchema) as unknown as Resolver<Values>,
+  });
+
+  const selectedState = watch('state');
 
   useEffect(() => {
     if (!loading && account) {
@@ -53,35 +100,332 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     }
   }, [loading, account, role, params, router]);
 
+  const handleDetectLocation = () => {
+    setLocationError('');
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setValue('lat', latitude);
+        setValue('lng', longitude);
+
+        try {
+          // Reverse-geocoding via BigDataCloud client API
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          const data = await res.json();
+          const rawState = data.principalSubdivision || data.region || '';
+          const city = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name || '';
+          const pincode = data.postcode || '';
+
+          const matchedTheme = getStateTheme(rawState || city);
+          const stateName = matchedTheme.id !== 'national' ? matchedTheme.name : rawState || 'Uttar Pradesh';
+
+          const formattedText = [city, stateName, pincode ? `PIN: ${pincode}` : ''].filter(Boolean).join(', ');
+
+          setValue('location', formattedText);
+          setValue('state', stateName);
+          setValue('city', city);
+          setValue('pincode', pincode);
+          setDetectedStateInfo({ state: stateName, pincode });
+        } catch {
+          // Fallback if network blocked for reverse geocode
+          const fallbackText = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setValue('location', fallbackText);
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) {
+          setLocationError('Location permission was denied. Please pick your state from the dropdown below.');
+        } else {
+          setLocationError('Could not fetch GPS location. Please select your state below.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
   const onSubmit = async (v: Values) => {
     setError('');
     try {
-      const r = await api<{ role: 'super_admin' | 'admin' | 'user'; account: Account }>(isLogin ? '/auth/login' : '/auth/register', { method: 'POST', body: JSON.stringify(v) });
+      const r = await api<{ role: 'super_admin' | 'admin' | 'user'; account: Account }>(
+        isLogin ? '/auth/login' : '/auth/register',
+        { method: 'POST', body: JSON.stringify(v) }
+      );
       setAuth(r.role, r.account);
       refresh().catch(() => null);
       const nextParam = params.get('next');
       const target = resolveSafeRedirect(nextParam, r.role);
       router.replace(target);
-    } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not sign in. Please try again.'); }
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Could not sign in. Please try again.');
+    }
   };
 
-  const err = (m?: string) => m && <p role="alert" className="mt-1 text-sm text-panther-red">{m}</p>;
+  const err = (m?: string) =>
+    m ? (
+      <p role="alert" className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-panther-red">
+        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+        <span>{m}</span>
+      </p>
+    ) : null;
+
   return (
-    <section className="grid min-h-[calc(100svh-72px)] place-items-center bg-fog px-5 py-12 lg:min-h-[calc(100svh-80px)]">
-      <div className="w-full max-w-md bg-white p-6 shadow-sm sm:p-10">
-        <h1 className="font-display text-4xl md:text-5xl">{isLogin ? 'Sign in' : 'Create account'}</h1>
-        <p className="mt-1 text-sm text-steel">{isLogin ? 'Welcome back. Sign in to see your enquiries.' : 'Save vehicles and track your enquiries.'}</p>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 space-y-5">
-          {!isLogin && <div><label htmlFor="name" className="mb-1.5 block text-sm font-semibold">Full name</label><input id="name" autoComplete="name" {...register('name')} className={input} />{err(errors.name?.message)}</div>}
-          <div><label htmlFor="email" className="mb-1.5 block text-sm font-semibold">Email</label><input id="email" type="email" autoComplete="username" {...register('email')} className={input} />{err(errors.email?.message)}</div>
-          {!isLogin && <div><label htmlFor="phone" className="mb-1.5 block text-sm font-semibold">Phone <span className="font-normal text-steel">(optional)</span></label><input id="phone" type="tel" autoComplete="tel" {...register('phone')} className={input} />{err(errors.phone?.message)}</div>}
-          <div><label htmlFor="password" className="mb-1.5 block text-sm font-semibold">Password</label><input id="password" type="password" autoComplete={isLogin ? 'current-password' : 'new-password'} {...register('password')} className={input} />{err(errors.password?.message)}{isLogin && <p className="mt-2 text-sm"><Link href="/forgot-password" className="font-semibold text-panther-red underline">Forgot password?</Link></p>}</div>
-          {error && <p role="alert" className="bg-red-50 px-4 py-3 text-sm text-panther-red">{error}</p>}
-          <button disabled={isSubmitting} className="w-full bg-panther-red py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-ink disabled:opacity-60">{isSubmitting ? (isLogin ? 'Signing in…' : 'Creating…') : isLogin ? 'Sign in' : 'Create account'}</button>
-        </form>
-        <p className="mt-6 text-sm text-steel">
-          {isLogin ? <>New to Panther? <Link href="/register" className="font-semibold text-panther-red underline">Create an account</Link></> : <>Already have an account? <Link href="/login" className="font-semibold text-panther-red underline">Sign in</Link></>}
+    <section className="relative flex min-h-[calc(100svh-72px)] items-center justify-center bg-[#F8F9FA] px-5 py-12 lg:min-h-[calc(100svh-80px)]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(228,32,43,0.04),transparent_60%)]"
+      />
+
+      <div className="relative w-full max-w-[460px] rounded-2xl border border-slate-200/90 bg-white p-7 shadow-[0_20px_50px_-15px_rgba(16,24,40,0.10)] sm:p-10">
+        {/* Top Header Badge */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-panther-red">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-panther-red opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-panther-red" />
+            </span>
+            <span>Panther EV</span>
+          </div>
+          <span className="text-xs font-medium text-steel">Secure Portal</span>
+        </div>
+
+        {/* Title & Subtitle */}
+        <h1 className="font-display text-4xl font-bold tracking-tight text-ink md:text-5xl">
+          {isLogin ? 'Sign in' : 'Create account'}
+        </h1>
+        <p className="mt-2 text-sm text-steel">
+          {isLogin
+            ? 'Welcome back. Sign in to see your personalized dashboard & enquiries.'
+            : 'Register to unlock your state-personalized dashboard, subsidy quotes & bookings.'}
         </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 space-y-4">
+          {!isLogin && (
+            <div>
+              <label htmlFor="name" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-charcoal">
+                Full name <span className="text-panther-red">*</span>
+              </label>
+              <input
+                id="name"
+                placeholder="e.g. Ramesh Kumar"
+                autoComplete="name"
+                {...register('name')}
+                className={inputClass}
+              />
+              {err(errors.name?.message)}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="email" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-charcoal">
+              Email address <span className="text-panther-red">*</span>
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              autoComplete="username"
+              {...register('email')}
+              className={inputClass}
+            />
+            {err(errors.email?.message)}
+          </div>
+
+          {!isLogin && (
+            <div>
+              <label htmlFor="phone" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-charcoal">
+                Phone number <span className="font-normal lowercase text-steel">(optional)</span>
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                placeholder="98765 43210"
+                autoComplete="tel"
+                {...register('phone')}
+                className={inputClass}
+              />
+              {err(errors.phone?.message)}
+            </div>
+          )}
+
+          {/* REQUIRED LOCATION & STATE (Register Mode) */}
+          {!isLogin && (
+            <div className="space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+              <div className="flex items-center justify-between">
+                <label htmlFor="location" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-charcoal">
+                  <MapPin className="h-3.5 w-3.5 text-panther-red" />
+                  <span>Live Location <span className="text-panther-red">*</span></span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={locating}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-panther-red shadow-sm border border-slate-200 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50"
+                >
+                  {locating ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Detecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crosshair className="h-3 w-3" />
+                      <span>Detect My Location</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Exact Location Text with Pin */}
+              <div className="relative">
+                <input
+                  id="location"
+                  placeholder="Click 'Detect My Location' or type address/city..."
+                  {...register('location')}
+                  className={`${inputClass} bg-white text-xs sm:text-sm pl-10`}
+                />
+                <MapPin className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-panther-red" />
+              </div>
+              {err(errors.location?.message)}
+
+              {/* State Dropdown */}
+              <div>
+                <label htmlFor="state" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-steel">
+                  State / Region <span className="text-panther-red">*</span>
+                </label>
+                <select
+                  id="state"
+                  {...register('state')}
+                  className={`${inputClass} bg-white text-xs sm:text-sm cursor-pointer`}
+                >
+                  <option value="">-- Select your Indian State --</option>
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st.id} value={st.name}>
+                      {st.icon} {st.name}
+                    </option>
+                  ))}
+                </select>
+                {err(errors.state?.message)}
+              </div>
+
+              {/* Success / Error indicators */}
+              {detectedStateInfo && (
+                <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    Detected: <strong>{detectedStateInfo.state}</strong>
+                    {detectedStateInfo.pincode ? ` (PIN ${detectedStateInfo.pincode})` : ''}
+                  </span>
+                </div>
+              )}
+
+              {locationError && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                  {locationError}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-charcoal">
+                Password <span className="text-panther-red">*</span>
+              </label>
+              {isLogin && (
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-panther-red transition-colors hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                {...register('password')}
+                className={`${inputClass} pr-11`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-steel transition-colors hover:text-ink"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {err(errors.password?.message)}
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-panther-red"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-panther-red via-[#E8222E] to-[#B8101C] py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_6px_20px_-2px_rgba(228,32,43,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_-2px_rgba(228,32,43,0.65)] active:translate-y-0 active:scale-[0.99] disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span>{isLogin ? 'Signing in…' : 'Creating account…'}</span>
+              </span>
+            ) : isLogin ? (
+              'Sign in'
+            ) : (
+              'Create account'
+            )}
+          </button>
+        </form>
+
+        {/* Footer Switch Link */}
+        <div className="mt-8 border-t border-slate-100 pt-6 text-center text-sm text-steel">
+          {isLogin ? (
+            <>
+              New to Panther?{' '}
+              <Link href="/register" className="font-bold text-panther-red hover:underline">
+                Create an account
+              </Link>
+            </>
+          ) : (
+            <>
+              Already have an account?{' '}
+              <Link href="/login" className="font-bold text-panther-red hover:underline">
+                Sign in
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* SSL Badge */}
+        <div className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-steel/60">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+          <span>256-Bit SSL Encrypted & Indian IT Act Compliant</span>
+        </div>
       </div>
     </section>
   );

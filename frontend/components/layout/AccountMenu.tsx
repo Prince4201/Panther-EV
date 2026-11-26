@@ -27,10 +27,10 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
             'group flex items-center transition-all duration-200 active:scale-95',
             iconOnly
               ? 'h-10 w-10 justify-center rounded-full text-ink/80 hover:bg-fog hover:text-panther-red'
-              : 'gap-2 rounded-full border border-line bg-fog/80 pl-1.5 pr-3 py-1.5 hover:border-panther-red/40 hover:bg-fog hover:shadow-sm'
+              : 'gap-2 rounded-full border border-line bg-fog/90 pl-1.5 pr-3.5 py-1.5 hover:border-panther-red/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5'
           )}
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-panther-red text-white text-[12px] font-bold uppercase shadow-sm">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-panther-red to-[#B8101C] text-white text-[12px] font-bold uppercase shadow-sm">
             {account.name.charAt(0)}
           </span>
           {!iconOnly && (
@@ -52,7 +52,7 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
             'group flex items-center transition-all duration-200 active:scale-95',
             iconOnly
               ? 'h-10 w-10 justify-center rounded-full text-ink/80 hover:bg-fog hover:text-panther-red'
-              : 'gap-1.5 rounded-full bg-ink px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm hover:bg-panther-red hover:shadow-md hover:shadow-panther-red/25'
+              : 'gap-2 rounded-full bg-gradient-to-r from-ink via-ink to-[#1a1b24] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm border border-black/10 hover:border-panther-red/30 hover:from-panther-red hover:via-panther-red hover:to-[#B8101C] hover:shadow-[0_4px_16px_rgba(228,32,43,0.35)] hover:-translate-y-0.5'
           )}
         >
           <User className="h-3.5 w-3.5" aria-hidden />

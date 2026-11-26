@@ -39,6 +39,8 @@ export const publicAccount = (acc, kind) => ({
   email: acc.email,
   phone: acc.phone || '',
   avatar: acc.avatar || '',
+  location: acc.location || acc.address?.line1 || '',
+  state: acc.state || acc.address?.state || '',
   address: addr(acc.address),
   role: kind === 'admin' ? acc.role : ROLES.USER,
   ...(kind === 'admin'
@@ -90,7 +92,7 @@ export async function login(req, res) {
 }
 
 export async function register(req, res) {
-  const { name, email, phone = '', password } = req.body;
+  const { name, email, phone = '', password, location = '', state = '', city = '', pincode = '', lat = null, lng = null } = req.body;
   const lower = email.toLowerCase();
 
   const [uCheck, aCheck] = await Promise.all([
@@ -105,10 +107,10 @@ export async function register(req, res) {
   const hash = await bcrypt.hash(password, 12);
   const now = new Date();
   const { rows } = await query(
-    `INSERT INTO users (name, email, phone, password_hash, last_active_at)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO users (name, email, phone, password_hash, last_active_at, location, address_state, address_city, address_pincode, latitude, longitude)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
-    [name, lower, phone, hash, now]
+    [name, lower, phone, hash, now, location, state, city, pincode, lat, lng]
   );
 
   const user = mapUser(rows[0]);

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Check, Plus } from 'lucide-react';
+import { ArrowRight, Check, Plus } from 'lucide-react';
 import { SPEC_FALLBACK } from '@/data/products';
 import { useCatalog } from '@/components/catalog/CatalogProvider';
 import { isExternalImage } from '@/lib/media';
@@ -63,9 +63,25 @@ export function VehicleShowcase() {
                   </button>
                 </div>
                 <p className="mt-3 border-t border-line/80 pt-3 text-sm text-steel">Specifications: {SPEC_FALLBACK}</p>
-                <div className="mt-4 flex gap-6 text-sm font-semibold uppercase tracking-wider">
-                  <Link href={`/vehicles/${p.slug}`} className="border-b-2 border-ink pb-1 transition-all duration-200 hover:border-panther-red hover:text-panther-red">Explore</Link>
-                  <button onClick={() => cart.has(p.slug) ? cart.setOpen(true) : cart.add({ slug: p.slug, name: p.name, image: p.image })} className="border-b-2 border-transparent pb-1 text-panther-red transition-all duration-200 hover:border-panther-red">{cart.has(p.slug) ? 'In enquiry cart' : 'Add to enquiry'}</button>
+                <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                  <Link
+                    href={`/vehicles/${p.slug}`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition-all duration-200 hover:bg-panther-red hover:shadow-md hover:shadow-panther-red/25 hover:-translate-y-0.5 active:scale-95"
+                  >
+                    Explore
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                  <button
+                    onClick={() => (cart.has(p.slug) ? cart.setOpen(true) : cart.add({ slug: p.slug, name: p.name, image: p.image }))}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200 hover:-translate-y-0.5 active:scale-95',
+                      cart.has(p.slug)
+                        ? 'border-emerald-600/40 bg-emerald-50 text-emerald-700 shadow-sm'
+                        : 'border-panther-red/30 bg-panther-red/[0.06] text-panther-red hover:bg-panther-red hover:text-white hover:shadow-md hover:shadow-panther-red/25'
+                    )}
+                  >
+                    {cart.has(p.slug) ? 'In enquiry cart' : 'Add to enquiry'}
+                  </button>
                 </div>
               </article>
             </li>

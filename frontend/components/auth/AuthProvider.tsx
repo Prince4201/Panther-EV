@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api } from '@/lib/api';
 
 export interface Address { line1: string; city: string; state: string; pincode: string; country: string }
-export interface Account { id: string; name: string; email: string; phone?: string; avatar?: string; address?: Address; permissions?: string[]; mustChangePassword?: boolean; createdAt?: string }
+export interface Account { id: string; name: string; email: string; phone?: string; avatar?: string; location?: string; state?: string; address?: Address; permissions?: string[]; mustChangePassword?: boolean; createdAt?: string }
 export type Role = 'super_admin' | 'admin' | 'user' | null;
 interface Ctx { role: Role; account: Account | null; loading: boolean; isStaff: boolean; can: (perm: string) => boolean; setAuth: (role: Role, account: Account | null) => void; refresh: () => Promise<void>; logout: () => Promise<void> }
 

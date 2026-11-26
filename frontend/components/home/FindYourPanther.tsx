@@ -34,7 +34,7 @@ export async function FindYourPanther() {
                   <p className="mt-3 text-white/70">{p.text}</p>
                 </div>
                 <Image src={m.image} unoptimized={isExternalImage(m.image)} alt="" fill sizes="(min-width:768px) 50vw, 100vw" className="object-contain object-bottom p-10 pt-40 transition-transform duration-700 ease-out group-hover:scale-[1.06]" />
-                <span className="relative z-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-panther-amber group-hover:text-white transition-colors duration-300">
+                <span className="relative z-10 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-md shadow-md transition-all duration-300 group-hover:bg-panther-red group-hover:border-panther-red group-hover:shadow-lg group-hover:shadow-panther-red/40 w-fit">
                   See models &rarr;
                 </span>
               </Link>

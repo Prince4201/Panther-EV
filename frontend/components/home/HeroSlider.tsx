@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { HeroCopy, HeroVehicle, textVariants, vehicleFadeVariants, vehicleVariants } from './HeroSlide';
 import { SlideIndicators } from './SlideIndicators';
 import type { HeroSettings, HeroSlideData } from '@/types/hero';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { getStateTheme, DEFAULT_THEME } from '@/data/stateThemes';
 
 /** Used only if neither the banner nor Admin > Settings gives a time. */
 const DEFAULT_MS = 3000;
@@ -22,6 +24,12 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
   const [userPaused, setUserPaused] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   const [hovered, setHovered] = useState(false);
+
+  /* ── State-based hero background ── */
+  const { account } = useAuth();
+  const stateTheme = getStateTheme(account?.state);
+  const bgImage = stateTheme.bgImage;
+  const isPersonalized = stateTheme.id !== DEFAULT_THEME.id;
 
   const autoplay = settings.autoplay && !reduce && total > 1;
   const running = autoplay && !userPaused && !tabHidden && !(settings.pauseOnHover && hovered);
@@ -60,25 +68,25 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
       onKeyDown={(e) => { if (e.key === 'ArrowRight') go(index + 1, 1); if (e.key === 'ArrowLeft') go(index - 1, -1); }}
       className="relative h-[min(calc(100svh-72px),820px)] min-h-[640px] touch-pan-y select-none overflow-hidden bg-ink focus-visible:outline-offset-[-6px] lg:h-[calc(100svh-80px)] lg:min-h-[600px] lg:max-h-[860px]">
 
-      {/* Fixed background with cinematic treatment */}
-      <Image src="/hero/golden-sunset-road.jpg" alt="Panther electric rickshaw on highway at sunset" fill priority sizes="100vw"
-        className="object-cover object-[30%_center] lg:object-center saturate-[1.08] contrast-[1.04]" />
+      {/* Fixed background — personalized per user's state, or default golden-sunset-road for anonymous visitors */}
+      <Image src={bgImage} alt={isPersonalized ? `Panther EV on ${stateTheme.name} highway` : 'Panther electric rickshaw on highway at sunset'} fill priority sizes="100vw"
+        className="object-cover object-[30%_center] lg:object-center saturate-[1.06] contrast-[1.03]" />
 
       {/* Multi-layer cinematic depth */}
-      {/* Base darkening */}
-      <div aria-hidden className="absolute inset-0 bg-black/[0.14]" />
+      {/* Base ambient darkening */}
+      <div aria-hidden className="absolute inset-0 bg-black/[0.12]" />
       {/* Text-side readability gradient */}
-      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,14,0.55)_0%,rgba(10,11,14,0.22)_38%,rgba(10,11,14,0)_58%)] lg:bg-[linear-gradient(90deg,rgba(10,11,14,0.6)_0%,rgba(10,11,14,0.36)_30%,rgba(10,11,14,0.06)_48%,rgba(10,11,14,0)_58%)]" />
-      {/* Warm cinematic ground anchor */}
-      <div aria-hidden className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,14,0.65)_0%,rgba(10,11,14,0.30)_35%,rgba(10,11,14,0)_55%)] lg:bg-[linear-gradient(90deg,rgba(10,11,14,0.72)_0%,rgba(10,11,14,0.42)_30%,rgba(10,11,14,0.1)_48%,rgba(10,11,14,0)_60%)]" />
+      {/* Warm cinematic ground anchor on asphalt */}
+      <div aria-hidden className="absolute inset-x-0 bottom-0 h-[22%] bg-gradient-to-t from-black/55 via-black/20 to-transparent pointer-events-none" />
       {/* Golden sun rim light */}
-      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_15%,rgba(255,165,60,0.08),transparent_50%)] mix-blend-screen" />
-      {/* Vignette for cinematic framing */}
-      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.25)_100%)]" />
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_45%_25%,rgba(255,180,80,0.10),transparent_50%)] mix-blend-screen pointer-events-none" />
+      {/* Subtle vignette for cinematic framing */}
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,0.30)_100%)] pointer-events-none" />
 
       <div className="relative mx-auto h-full max-w-page">
         {/* Vehicle: right side on desktop, lower/right on tablet and phone. */}
-        <div className="absolute inset-x-0 bottom-[104px] top-[41%] lg:bottom-[9%] lg:left-auto lg:right-[2%] lg:top-[5%] lg:w-[58%]">
+        <div className="absolute inset-x-0 bottom-[104px] top-[41%] lg:bottom-[8%] lg:left-auto lg:right-[2%] lg:top-[5%] lg:w-[58%]">
           <AnimatePresence initial={false} custom={dir}>
             <motion.div key={slide._id} custom={dir} variants={reduce ? undefined : variants} initial={reduce ? false : 'enter'} animate="center" exit={reduce ? undefined : 'exit'}
               role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} className="absolute inset-0">
@@ -102,7 +110,12 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
         {/* Carousel dock */}
         {total > 1 && (settings.showIndicators || settings.showArrows) && (
           <div className="absolute inset-x-0 bottom-[54px] z-20 flex items-center px-5 sm:px-8 lg:bottom-7 lg:pl-[5vw]">
-            <div className="inline-flex items-center gap-3 rounded-full bg-black/50 backdrop-blur-md border border-white/15 px-4 py-2 shadow-2xl shadow-black/40">
+            <div className="inline-flex items-center gap-3 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 px-4 py-2 shadow-[0_10px_32px_rgba(0,0,0,0.55)]">
+              {/* Slide Counter */}
+              <span className="font-mono text-[11px] font-semibold text-white/70 select-none">
+                0{index + 1} <span className="text-white/40">/</span> 0{total}
+              </span>
+
               {settings.showIndicators && <SlideIndicators slides={slides} index={index} running={running} duration={slideMs} onSelect={(i) => go(i)} />}
               {settings.showIndicators && autoplay && (
                 <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
@@ -123,6 +136,16 @@ export function HeroSlider({ slides, settings }: { slides: HeroSlideData[]; sett
                 </div>
               )}
             </div>
+
+            {/* Personalized state badge — shown when user is logged in with a matched state */}
+            {isPersonalized && (
+              <div className="ml-auto hidden items-center gap-2 rounded-full bg-black/50 backdrop-blur-xl border border-white/15 px-4 py-2 shadow-lg lg:inline-flex">
+                <span className="text-base">{stateTheme.icon}</span>
+                <span className="text-xs font-semibold text-white/90 tracking-wide">{stateTheme.name}</span>
+                <span className="text-[10px] text-white/50 font-medium">•</span>
+                <span className="text-[10px] text-white/60 font-medium italic">{stateTheme.tagline}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

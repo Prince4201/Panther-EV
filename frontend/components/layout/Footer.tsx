@@ -29,7 +29,7 @@ export async function Footer() {
     ...staticColumns,
   ];
   return (
-    <footer className="bg-ink pb-20 text-white lg:pb-0">
+    <footer className="bg-ink pb-28 text-white lg:pb-0">
       <div className="mx-auto max-w-page px-5 py-16 md:px-10 md:py-24">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_3fr]">
           <div>

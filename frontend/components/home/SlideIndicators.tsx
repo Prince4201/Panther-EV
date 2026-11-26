@@ -9,22 +9,38 @@ interface Props {
   onSelect: (i: number) => void;
 }
 
-/** Four minimal bars, one per vehicle. The active bar fills over the slide time, so it shows both which vehicle is up and when the next arrives. */
+/** Luxury indicators dock: each pill represents a vehicle with smooth fill animation and active glow */
 export function SlideIndicators({ slides, index, running, duration, onSelect }: Props) {
   return (
-    <ul className="flex items-center gap-2" aria-label="Choose vehicle">
-      {slides.map((s, i) => (
-        <li key={s._id}>
-          <button onClick={() => onSelect(i)} aria-label={`Show ${s.title}`} aria-current={i === index} className="group flex h-6 w-8 items-center sm:w-11">
-            <span className={cn('relative block h-[3.5px] w-full overflow-hidden rounded-full transition-colors', i === index ? 'bg-white/30' : 'bg-white/20 group-hover:bg-white/50')}>
-              {i === index && (
-                <span key={index} className="absolute inset-0 origin-left rounded-full bg-panther-red shadow-[0_0_8px_rgba(228,32,43,0.85)]"
-                  style={running ? { animation: `heroProgress ${duration}ms linear forwards` } : { transform: 'scaleX(1)' }} />
-              )}
-            </span>
-          </button>
-        </li>
-      ))}
+    <ul className="flex items-center gap-2.5" aria-label="Choose vehicle">
+      {slides.map((s, i) => {
+        const isActive = i === index;
+        return (
+          <li key={s._id}>
+            <button
+              onClick={() => onSelect(i)}
+              aria-label={`Show ${s.title}`}
+              aria-current={isActive}
+              className="group flex h-7 items-center transition-transform active:scale-95"
+            >
+              <span
+                className={cn(
+                  'relative block h-[4px] rounded-full overflow-hidden transition-all duration-300',
+                  isActive ? 'w-10 sm:w-12 bg-white/30' : 'w-5 sm:w-7 bg-white/20 group-hover:bg-white/40'
+                )}
+              >
+                {isActive && (
+                  <span
+                    key={index}
+                    className="absolute inset-0 origin-left rounded-full bg-gradient-to-r from-[#E4202B] to-[#FF4B56] shadow-[0_0_10px_rgba(228,32,43,0.95)]"
+                    style={running ? { animation: `heroProgress ${duration}ms linear forwards` } : { transform: 'scaleX(1)' }}
+                  />
+                )}
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
