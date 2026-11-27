@@ -48,6 +48,7 @@ export function mapUser(row) {
     avatar: row.avatar || '',
     location: row.location || '',
     state: row.address_state || '',
+    country: row.address_country || 'India',
     latitude: row.latitude != null ? Number(row.latitude) : null,
     longitude: row.longitude != null ? Number(row.longitude) : null,
     address: {

@@ -80,7 +80,9 @@ export function ProfileForm() {
           <Field id="p-city" label="City" error={errs.city}><input id="p-city" value={v.city} onChange={set('city')} autoComplete="address-level2" className={inputCls} /></Field>
           <Field id="p-state" label="State" error={errs.state}><input id="p-state" value={v.state} onChange={set('state')} autoComplete="address-level1" className={inputCls} /></Field>
           <Field id="p-pin" label="Pincode" error={errs.pincode}><input id="p-pin" inputMode="numeric" value={v.pincode} onChange={set('pincode')} autoComplete="postal-code" className={inputCls} /></Field>
-          <Field id="p-country" label="Country" error={errs.country}><input id="p-country" value={v.country} onChange={set('country')} autoComplete="country-name" className={inputCls} /></Field>
+          <Field id="p-country" label="Country" hint="Country is locked to your registered account." error={errs.country}>
+            <input id="p-country" value={v.country} disabled className={`${inputCls} opacity-60 cursor-not-allowed bg-slate-50`} />
+          </Field>
         </div>
       </fieldset>
 

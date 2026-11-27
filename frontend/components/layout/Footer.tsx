@@ -69,14 +69,12 @@ export async function Footer() {
             </ul>
           </div>
         )}
-        {/* Copyright (left), design credit (middle), country (right). The right cell leaves room for the Quick Enquiry button. */}
-        <div className={`${partners.length > 0 ? 'mt-10' : 'mt-16'} grid items-center gap-5 border-t border-white/15 pt-8 text-sm text-white/60 md:grid-cols-3`}>
+        {/* Copyright (left), country (right). The right cell leaves room for the Quick Enquiry button. */}
+        <div className={`${partners.length > 0 ? 'mt-10' : 'mt-16'} flex flex-col sm:flex-row items-center justify-between gap-5 border-t border-white/15 pt-8 text-sm text-white/60`}>
           <p>© {new Date().getFullYear()} Panther Electric Vehicles. All rights reserved.</p>
-          {/* Only the two names are links. */}
-          <p className="text-xs text-white/45 md:text-center">
-            Designed by <a href="https://www.linkedin.com/in/ritesh-kumar-ghosh/" target="_blank" rel="noopener noreferrer" className="text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline">Ritesh</a> and <a href="https://subhasiniportfolio.netlify.app/" target="_blank" rel="noopener noreferrer" className="text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline">Subhasini</a>
-          </p>
-          <div className="md:justify-self-end lg:pr-56 min-[1900px]:pr-0"><CountrySelector align="left" up className="-ml-2.5 text-white/80 [&_button]:text-sm" /></div>
+          <div className="lg:pr-56 min-[1900px]:pr-0">
+            <CountrySelector onDark align="left" up className="-ml-2.5" />
+          </div>
         </div>
       </div>
     </footer>

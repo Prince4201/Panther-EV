@@ -9,6 +9,7 @@ export const registerSchema = z.object({
   state: z.string().trim().max(100).optional().default(''),
   city: z.string().trim().max(100).optional().default(''),
   pincode: z.string().trim().max(20).optional().default(''),
+  country: z.string().trim().max(80).optional().default('India'),
   lat: z.number().optional().nullable(),
   lng: z.number().optional().nullable(),
 }).strict();

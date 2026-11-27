@@ -41,6 +41,7 @@ type Values = {
   state?: string;
   city?: string;
   pincode?: string;
+  country?: string;
   lat?: number | null;
   lng?: number | null;
   password: string;
@@ -122,6 +123,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           const rawState = data.principalSubdivision || data.region || '';
           const city = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name || '';
           const pincode = data.postcode || '';
+          const detectedCountry = data.countryName || 'India';
 
           const matchedTheme = getStateTheme(rawState || city);
           const stateName = matchedTheme.id !== 'national' ? matchedTheme.name : rawState || 'Uttar Pradesh';
@@ -132,7 +134,15 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           setValue('state', stateName);
           setValue('city', city);
           setValue('pincode', pincode);
+          setValue('country', detectedCountry);
           setDetectedStateInfo({ state: stateName, pincode });
+
+          // Also sync country code to localStorage
+          try {
+            const countryCode = data.countryCode || 'IN';
+            localStorage.setItem('panther-country', countryCode);
+            window.dispatchEvent(new CustomEvent('panther:country', { detail: countryCode }));
+          } catch { /* storage blocked */ }
         } catch {
           // Fallback if network blocked for reverse geocode
           const fallbackText = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
@@ -156,9 +166,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const onSubmit = async (v: Values) => {
     setError('');
     try {
+      const payload = isLogin ? v : { ...v, country: v.country || 'India' };
       const r = await api<{ role: 'super_admin' | 'admin' | 'user'; account: Account }>(
         isLogin ? '/auth/login' : '/auth/register',
-        { method: 'POST', body: JSON.stringify(v) }
+        { method: 'POST', body: JSON.stringify(payload) }
       );
       setAuth(r.role, r.account);
       refresh().catch(() => null);

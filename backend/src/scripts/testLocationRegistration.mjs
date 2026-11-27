@@ -19,6 +19,7 @@ async function run() {
     state: 'Uttar Pradesh',
     city: 'Varanasi',
     pincode: '221001',
+    country: 'India',
     lat: 25.3176,
     lng: 82.9739,
   });
@@ -53,7 +54,7 @@ async function run() {
   console.log('ACCOUNT RESPONSE:', res.body.account);
 
   const dbRow = await query(
-    'SELECT id, name, location, address_state, address_city, address_pincode, latitude, longitude FROM users WHERE email = $1',
+    'SELECT id, name, location, address_state, address_city, address_pincode, address_country, latitude, longitude FROM users WHERE email = $1',
     [testEmail]
   );
   console.log('DATABASE ROW:', dbRow.rows[0]);
@@ -66,11 +67,13 @@ async function run() {
     res.status === 201 &&
     res.body.account.location === 'Varanasi, Uttar Pradesh, PIN: 221001' &&
     res.body.account.state === 'Uttar Pradesh' &&
+    res.body.account.country === 'India' &&
     dbRow.rows[0].location === 'Varanasi, Uttar Pradesh, PIN: 221001' &&
     dbRow.rows[0].address_state === 'Uttar Pradesh' &&
+    dbRow.rows[0].address_country === 'India' &&
     Math.abs(dbRow.rows[0].latitude - 25.3176) < 0.001
   ) {
-    console.log('✓ PASS: Registration with live location and state successfully persisted and returned!');
+    console.log('✓ PASS: Registration with live location, state, and country successfully persisted and returned!');
     process.exit(0);
   } else {
     console.error('✗ FAIL: Verification failed!');
