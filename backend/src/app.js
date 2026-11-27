@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'node:path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -34,8 +35,12 @@ const origins = [...new Set(allowedOrigins)];
 app.use(cors({ origin: origins.length === 1 ? origins[0] : origins, credentials: true }));
 app.use(morgan(env.isProd ? 'combined' : 'dev'));
 app.use(rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Serve local media uploads (avatars, banners, product pictures)
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.use('/api', routes);
 app.use(notFound);

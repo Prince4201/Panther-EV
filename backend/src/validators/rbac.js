@@ -3,8 +3,13 @@ import { INQUIRY_STATUSES, PERMISSION_KEYS } from '../lib/permissions.js';
 
 const oid = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 const phone = z.union([z.string().trim().regex(/^[0-9+\-\s]{7,20}$/, 'Enter a valid phone number'), z.literal('')]);
-export const strongPassword = z.string().min(10, 'Use at least 10 characters').max(200)
+export const strongPassword = z.string().min(8, 'Use at least 8 characters').max(200)
   .regex(/[A-Za-z]/, 'Include at least one letter').regex(/[0-9]/, 'Include at least one number');
+
+export const avatarUrl = z.union([
+  z.string().trim().refine((u) => /^https?:\/\//i.test(u) || u.startsWith('/') || /^data:image\//i.test(u), 'Provide a valid image URL or upload an image'),
+  z.literal(''),
+]);
 
 export const addressSchema = z.object({
   line1: z.string().trim().max(160).default(''),
@@ -18,7 +23,7 @@ export const profileSchema = z.object({
   name: z.string().trim().min(2, 'Enter your name').max(80),
   phone: phone.default(''),
   address: addressSchema.optional(),
-  avatar: z.union([z.string().trim().url().refine((u) => /^https:\/\//i.test(u), 'Use an https link'), z.literal('')]).optional(),
+  avatar: avatarUrl.optional(),
 }).strict();
 
 export const changeOwnPasswordSchema = z.object({
@@ -36,7 +41,7 @@ export const resetSchema = z.object({
 }).strict().refine((d) => d.newPassword === d.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
 
 const perms = z.array(z.enum(PERMISSION_KEYS)).max(PERMISSION_KEYS.length).transform((a) => [...new Set(a)]);
-const avatar = z.union([z.string().trim().url().max(500).refine((u) => /^https:\/\//i.test(u), 'Use an https link'), z.literal('')]);
+const avatar = avatarUrl;
 // There is deliberately no "role" field (and the schemas are strict, so sending one is rejected):
 // accounts created or edited here are always plain admins. Super admins exist only via the seed.
 export const createAdminSchema = z.object({

@@ -101,15 +101,6 @@ export function HeroVehicle({ slide, priority }: { slide: HeroSlideData; priorit
 export function HeroCopy({ slide }: { slide: HeroSlideData }) {
   return (
     <>
-      {/* Live Badge Pill */}
-      <motion.div variants={lineVariants} className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md shadow-lg">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-panther-red opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-panther-red" />
-        </span>
-        <span className="text-white/90">Next-Gen Electric Mobility</span>
-      </motion.div>
-
       {/* Main Headline */}
       <motion.h2
         variants={lineVariants}

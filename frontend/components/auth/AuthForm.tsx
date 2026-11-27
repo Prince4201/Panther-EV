@@ -13,7 +13,6 @@ import {
   EyeOff,
   Loader2,
   MapPin,
-  ShieldCheck,
 } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import { useAuth, type Account, type Role } from './AuthProvider';
@@ -196,27 +195,15 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(228,32,43,0.04),transparent_60%)]"
       />
 
-      <div className="relative w-full max-w-[460px] rounded-2xl border border-slate-200/90 bg-white p-7 shadow-[0_20px_50px_-15px_rgba(16,24,40,0.10)] sm:p-10">
-        {/* Top Header Badge */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-panther-red">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-panther-red opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-panther-red" />
-            </span>
-            <span>Panther EV</span>
-          </div>
-          <span className="text-xs font-medium text-steel">Secure Portal</span>
-        </div>
-
+      <div className="relative w-full max-w-[460px] rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_50px_-15px_rgba(16,24,40,0.08)] sm:p-10">
         {/* Title & Subtitle */}
         <h1 className="font-display text-4xl font-bold tracking-tight text-ink md:text-5xl">
           {isLogin ? 'Sign in' : 'Create account'}
         </h1>
         <p className="mt-2 text-sm text-steel">
           {isLogin
-            ? 'Welcome back. Sign in to see your personalized dashboard & enquiries.'
-            : 'Register to unlock your state-personalized dashboard, subsidy quotes & bookings.'}
+            ? 'Welcome back. Sign in to access your dashboard and enquiries.'
+            : 'Register to unlock your personalized dashboard, subsidy quotes & bookings.'}
         </p>
 
         {/* Form */}
@@ -430,12 +417,6 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
               </Link>
             </>
           )}
-        </div>
-
-        {/* SSL Badge */}
-        <div className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-steel/60">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-          <span>256-Bit SSL Encrypted & Indian IT Act Compliant</span>
         </div>
       </div>
     </section>

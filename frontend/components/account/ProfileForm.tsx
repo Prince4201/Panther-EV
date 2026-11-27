@@ -31,6 +31,7 @@ export function ProfileForm() {
       const fd = new FormData(); fd.append('image', ready, ready.name);
       const r = await api<{ url: string }>('/auth/upload-avatar', { method: 'POST', body: fd });
       setV((p) => ({ ...p, avatar: r.url }));
+      setMsg({ ok: true, text: 'Photo uploaded! Click "Save profile" below to save changes.' });
     } catch (e) { setMsg({ ok: false, text: e instanceof ApiError ? e.message : 'Upload failed.' }); }
     finally { setPhotoBusy(false); }
   };
