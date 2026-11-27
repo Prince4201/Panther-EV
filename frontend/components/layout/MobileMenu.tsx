@@ -33,9 +33,19 @@ export function MobileMenu({ onClose }: { onClose: () => void }) {
       <nav aria-label="Mobile" className="px-5 pb-32 pt-4">
         {account && (
           <div className="mb-4 flex items-center gap-3 rounded-2xl border border-line/80 bg-fog/80 p-3.5 shadow-sm">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-panther-red text-white font-bold uppercase shadow-sm">
-              {account.name.charAt(0)}
-            </span>
+            {account.avatar ? (
+              <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
+                <img
+                  src={account.avatar}
+                  alt={account.name}
+                  className="h-full w-full object-cover"
+                />
+              </span>
+            ) : (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-panther-red text-white font-bold uppercase shadow-sm">
+                {account.name.charAt(0)}
+              </span>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-ink">{account.name}</p>
               <p className="truncate text-xs text-steel">{account.email}</p>

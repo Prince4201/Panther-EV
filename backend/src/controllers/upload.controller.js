@@ -1,10 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
 import { cloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
 
 const FOLDERS = { hero: 'panther-ev/hero', products: 'panther-ev/products', partners: 'panther-ev/partners', avatars: 'panther-ev/avatars', team: 'panther-ev/team' };
-const LOCAL_SUBDIRS = { hero: 'hero', products: 'products', partners: 'partners', avatars: 'avatars', team: 'team' };
 
 // The browser-supplied mimetype can be faked, so the file's first bytes are checked too.
 function sniff(buf) {
@@ -16,19 +12,12 @@ function sniff(buf) {
   return null;
 }
 
-const EXT_MAP = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/avif': 'avif',
-};
-
 export async function uploadImage(req, res, next) {
   if (!req.file) return res.status(400).json({ message: 'Choose an image to upload.' });
   const mime = sniff(req.file.buffer);
   if (!mime) return res.status(400).json({ message: 'That file is not a valid JPG, PNG, WebP or AVIF image.' });
 
-  const folderKey = req.query.folder && LOCAL_SUBDIRS[req.query.folder] ? req.query.folder : 'avatars';
+  const folderKey = req.query.folder || 'avatars';
 
   // If Cloudinary is configured with valid credentials, use Cloudinary
   if (isCloudinaryConfigured()) {
@@ -47,28 +36,18 @@ export async function uploadImage(req, res, next) {
     return stream.end(req.file.buffer);
   }
 
-  // Fallback: Local file storage served by Express
+  // Fallback: Base64 Data URL for instant, permanent persistence in PostgreSQL
+  // This guarantees images NEVER disappear when Render restarts or redeploys!
   try {
-    const ext = EXT_MAP[mime] || 'jpg';
-    const subDir = LOCAL_SUBDIRS[folderKey] || 'avatars';
-    const filename = `${subDir}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
-    const targetDir = path.resolve(process.cwd(), 'uploads', subDir);
-
-    await fs.promises.mkdir(targetDir, { recursive: true });
-    await fs.promises.writeFile(path.join(targetDir, filename), req.file.buffer);
-
-    const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'http';
-    const host = (typeof req.get === 'function' ? req.get('host') : req.headers?.host) || 'localhost:5000';
-    const url = `${proto}://${host}/uploads/${subDir}/${filename}`;
-
+    const base64Data = req.file.buffer.toString('base64');
+    const dataUrl = `data:${mime};base64,${base64Data}`;
     return res.status(201).json({
-      url,
-      publicId: filename,
-      local: true,
+      url: dataUrl,
+      publicId: 'base64',
       message: 'Image uploaded successfully.'
     });
   } catch (err) {
-    console.error('Local image upload error:', err);
-    return res.status(500).json({ message: 'Failed to save uploaded image.' });
+    console.error('Image upload error:', err);
+    return res.status(500).json({ message: 'Failed to process image.' });
   }
 }

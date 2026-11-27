@@ -11,6 +11,7 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
   const { isStaff, account, logout } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useDismiss(box, open, () => setOpen(false));
   const item = 'flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-fog hover:text-panther-red';
@@ -30,9 +31,20 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
               : 'gap-2 rounded-full border border-line bg-fog/90 pl-1.5 pr-3.5 py-1.5 hover:border-panther-red/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5'
           )}
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-panther-red to-[#B8101C] text-white text-[12px] font-bold uppercase shadow-sm">
-            {account.name.charAt(0)}
-          </span>
+          {account.avatar && !avatarError ? (
+            <span className="relative flex h-7 w-7 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
+              <img
+                src={account.avatar}
+                alt={account.name}
+                onError={() => setAvatarError(true)}
+                className="h-full w-full object-cover"
+              />
+            </span>
+          ) : (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-panther-red to-[#B8101C] text-white text-[12px] font-bold uppercase shadow-sm">
+              {account.name.charAt(0)}
+            </span>
+          )}
           {!iconOnly && (
             <>
               <span className="max-w-[130px] truncate text-[14px] font-semibold text-ink group-hover:text-panther-red transition-colors">
@@ -68,12 +80,28 @@ export function AccountMenu({ iconOnly = false }: { iconOnly?: boolean }) {
         >
           {account ? (
             <>
-              <div className="rounded-xl bg-fog/70 border border-line/60 p-3 mb-1.5">
-                <span className="inline-block rounded-full bg-red-100/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-panther-red">
-                  Signed in
-                </span>
-                <p className="mt-1.5 truncate text-sm font-bold text-ink">{account.name}</p>
-                <p className="truncate text-xs text-steel">{account.email}</p>
+              <div className="rounded-xl bg-fog/70 border border-line/60 p-3 mb-1.5 flex items-center gap-3">
+                {account.avatar && !avatarError ? (
+                  <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
+                    <img
+                      src={account.avatar}
+                      alt={account.name}
+                      onError={() => setAvatarError(true)}
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-panther-red to-[#B8101C] text-white text-sm font-bold uppercase shadow-sm">
+                    {account.name.charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="inline-block rounded-full bg-red-100/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-panther-red">
+                    Signed in
+                  </span>
+                  <p className="mt-0.5 truncate text-sm font-bold text-ink">{account.name}</p>
+                  <p className="truncate text-xs text-steel">{account.email}</p>
+                </div>
               </div>
               <div className="space-y-0.5">
                 {isStaff ? (
